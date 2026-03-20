@@ -15,4 +15,23 @@ layout: default
       </li>
     {% endfor %}
   </ul>
+
+  <h2>> ls -t ./notes/</h2>
+
+  {% assign grouped_notes = site.notes | sort: "date" | reverse | group_by_exp: "note", "note.category" %}
+  {% for group in grouped_notes %}
+  <h3 class="note-category">[{{ group.name }}]</h3>
+  <ul class="post-list">
+    {% for note in group.items %}
+      <li>
+        <span class="post-date">{{ note.date | date: "%Y-%m-%d" }}</span>
+        <a href="{{ note.url | relative_url }}">{{ note.title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+
+  {% if site.notes.size == 0 %}
+  <p class="empty-hint">// 暂无笔记</p>
+  {% endif %}
 </section>
