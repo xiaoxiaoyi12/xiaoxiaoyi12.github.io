@@ -2,54 +2,185 @@
 layout: default
 ---
 
-<nav class="top-nav">
-  <a href="#posts">文章</a>
-  <a href="#notes">笔记</a>
-</nav>
-
 <style>
   .top-nav {
+    display: flex;
+    align-items: center;
     padding: 10px 0 20px;
     border-bottom: 1px solid #333;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    gap: 15px;
   }
-  .top-nav a {
-    margin-right: 20px;
-    font-size: 18px;
+  .tab-btn {
+    background: none;
+    border: 1px solid #555;
+    color: #999;
+    padding: 6px 16px;
+    font-size: 16px;
     font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 3px;
+  }
+  .tab-btn.active {
+    color: #b5e853;
+    border-color: #b5e853;
+  }
+  .search-box {
+    margin-left: auto;
+  }
+  .search-box input {
+    background: #111;
+    border: 1px solid #555;
+    color: #eee;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    border-radius: 3px;
+    width: 200px;
+  }
+  .search-box input::placeholder {
+    color: #666;
+  }
+  .search-box input:focus {
+    outline: none;
+    border-color: #b5e853;
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  .no-result {
+    color: #666;
+    font-style: italic;
+    margin-top: 10px;
   }
 </style>
 
 <section id="main_content">
   {{ content }}
 
-  <h2 id="posts">文章</h2>
+  <nav class="top-nav">
+    <button class="tab-btn active" data-tab="posts">文章</button>
+    <button class="tab-btn" data-tab="notes">笔记</button>
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="搜索文章和笔记...">
+    </div>
+  </nav>
 
-  <ul class="post-list">
-    {% for post in site.posts %}
-      <li>
-        <span class="post-date">{{ post.date | date: "%Y-%m-%d" }}</span>
-        <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
-      </li>
+  <div id="search-results" class="tab-content">
+    <h2>搜索结果</h2>
+    <ul class="post-list" id="search-list"></ul>
+    <p class="no-result" id="no-result" style="display:none;">未找到匹配内容</p>
+  </div>
+
+  <div id="tab-posts" class="tab-content active">
+    <ul class="post-list">
+      {% for post in site.posts %}
+        <li>
+          <span class="post-date">{{ post.date | date: "%Y-%m-%d" }}</span>
+          <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div id="tab-notes" class="tab-content">
+    {% assign grouped_notes = site.notes | sort: "date" | reverse | group_by_exp: "note", "note.category" %}
+    {% for group in grouped_notes %}
+    <h3 class="note-category">[{{ group.name }}]</h3>
+    <ul class="post-list">
+      {% for note in group.items %}
+        <li>
+          <span class="post-date">{{ note.date | date: "%Y-%m-%d" }}</span>
+          <a href="{{ note.url | relative_url }}">{{ note.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
     {% endfor %}
-  </ul>
 
-  <h2 id="notes">笔记</h2>
-
-  {% assign grouped_notes = site.notes | sort: "date" | reverse | group_by_exp: "note", "note.category" %}
-  {% for group in grouped_notes %}
-  <h3 class="note-category">[{{ group.name }}]</h3>
-  <ul class="post-list">
-    {% for note in group.items %}
-      <li>
-        <span class="post-date">{{ note.date | date: "%Y-%m-%d" }}</span>
-        <a href="{{ note.url | relative_url }}">{{ note.title }}</a>
-      </li>
-    {% endfor %}
-  </ul>
-  {% endfor %}
-
-  {% if site.notes.size == 0 %}
-  <p class="empty-hint">// 暂无笔记</p>
-  {% endif %}
+    {% if site.notes.size == 0 %}
+    <p class="empty-hint">// 暂无笔记</p>
+    {% endif %}
+  </div>
 </section>
+
+<script>
+  // 所有内容数据
+  var allItems = [
+    {% for post in site.posts %}
+      { title: {{ post.title | jsonify }}, date: "{{ post.date | date: '%Y-%m-%d' }}", url: "{{ post.url | relative_url }}", type: "文章" },
+    {% endfor %}
+    {% for note in site.notes %}
+      { title: {{ note.title | jsonify }}, date: "{{ note.date | date: '%Y-%m-%d' }}", url: "{{ note.url | relative_url }}", type: "笔记" },
+    {% endfor %}
+  ];
+
+  // Tab 切换
+  var tabs = document.querySelectorAll('.tab-btn');
+  var tabContents = {
+    posts: document.getElementById('tab-posts'),
+    notes: document.getElementById('tab-notes')
+  };
+  var searchResults = document.getElementById('search-results');
+  var searchInput = document.getElementById('search-input');
+
+  tabs.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      tabs.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+
+      // 清空搜索
+      searchInput.value = '';
+      searchResults.classList.remove('active');
+
+      // 切换 tab
+      Object.keys(tabContents).forEach(function(key) {
+        tabContents[key].classList.remove('active');
+      });
+      tabContents[btn.dataset.tab].classList.add('active');
+    });
+  });
+
+  // 搜索功能
+  searchInput.addEventListener('input', function() {
+    var query = this.value.trim().toLowerCase();
+
+    if (!query) {
+      searchResults.classList.remove('active');
+      // 恢复当前激活的 tab
+      var activeTab = document.querySelector('.tab-btn.active');
+      tabContents[activeTab.dataset.tab].classList.add('active');
+      return;
+    }
+
+    // 隐藏所有 tab，显示搜索结果
+    Object.keys(tabContents).forEach(function(key) {
+      tabContents[key].classList.remove('active');
+    });
+    searchResults.classList.add('active');
+
+    var list = document.getElementById('search-list');
+    var noResult = document.getElementById('no-result');
+    list.innerHTML = '';
+
+    var matches = allItems.filter(function(item) {
+      return item.title.toLowerCase().indexOf(query) !== -1;
+    });
+
+    if (matches.length === 0) {
+      noResult.style.display = 'block';
+    } else {
+      noResult.style.display = 'none';
+      matches.forEach(function(item) {
+        var li = document.createElement('li');
+        li.innerHTML = '<span class="post-date">' + item.date + '</span> '
+          + '<a href="' + item.url + '">' + item.title + '</a> '
+          + '<span style="color:#666;font-size:12px;">(' + item.type + ')</span>';
+        list.appendChild(li);
+      });
+    }
+  });
+</script>
