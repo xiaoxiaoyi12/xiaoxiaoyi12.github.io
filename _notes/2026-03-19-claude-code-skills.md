@@ -2,6 +2,7 @@
 title: "Claude Code Skills 机制学习"
 date: 2026-03-19
 category: "Claude Code"
+tags: [Claude Code, Jekyll, GitHub Pages]
 ---
 
 ## 概述

@@ -27,6 +27,8 @@ layout: default
 
 {{content}}
 
-{% if page.tags %}
-  <small>tags: <em>{{ page.tags | join: "</em> - <em>" }}</em></small>
+{% if page.tags.size > 0 %}
+<div class="post-tags">
+  {% for tag in page.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+</div>
 {% endif %}
