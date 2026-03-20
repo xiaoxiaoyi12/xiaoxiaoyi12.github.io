@@ -1,4 +1,7 @@
 title: My Daily Log
 description: 每日工作与学习日志
-theme: minima
+remote_theme: pages-themes/hacker
 url: "https://xiaoxiaoyi12.github.io"
+plugins:
+  - jekyll-remote-theme
+show_downloads: false

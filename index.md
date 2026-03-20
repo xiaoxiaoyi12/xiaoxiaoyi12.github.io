@@ -3,4 +3,4 @@ layout: home
 title: Daily Logs
 ---
 
-Welcome to my daily log. Here are my recent entries:
+欢迎访问我的每日日志。以下是最近的记录：
