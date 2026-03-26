@@ -3,6 +3,44 @@
 
 @import "jekyll-theme-hacker";
 
+// ===== CSS Variable Definitions =====
+
+[data-theme="dark"] {
+  --bg-page: #0d1117;
+  --bg-card: #161b22;
+  --border: #21262d;
+  --border-light: #30363d;
+  --text-primary: #c9d1d9;
+  --text-secondary: #b0b8c1;
+  --text-muted: #8b949e;
+  --text-dimmed: #484f58;
+  --accent: #58a6ff;
+  --accent-hover: #79c0ff;
+  --accent-bg: rgba(56, 130, 246, 0.08);
+  --accent-border: #1f3a5f;
+  --blockquote-bg: rgba(56, 130, 246, 0.05);
+  --table-row-even: rgba(22, 27, 34, 0.5);
+  --inline-code-color: #e6edf3;
+}
+
+[data-theme="light"] {
+  --bg-page: #fafaf8;
+  --bg-card: #f0efe8;
+  --border: #d5d3c8;
+  --border-light: #e0dfd6;
+  --text-primary: #2c2c2a;
+  --text-secondary: #4a4a45;
+  --text-muted: #8a8778;
+  --text-dimmed: #b0ad9e;
+  --accent: #5a7a3a;
+  --accent-hover: #4a6630;
+  --accent-bg: rgba(90, 122, 58, 0.08);
+  --accent-border: #a8c080;
+  --blockquote-bg: rgba(90, 122, 58, 0.05);
+  --table-row-even: rgba(240, 239, 232, 0.5);
+  --inline-code-color: #2c2c2a;
+}
+
 // ===== 全局样式覆盖 =====
 
 body {
