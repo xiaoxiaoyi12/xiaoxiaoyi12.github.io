@@ -24,21 +24,21 @@
 }
 
 [data-theme="light"] {
-  --bg-page: #fafaf8;
-  --bg-card: #f0efe8;
-  --border: #d5d3c8;
-  --border-light: #e0dfd6;
-  --text-primary: #2c2c2a;
-  --text-secondary: #4a4a45;
-  --text-muted: #8a8778;
-  --text-dimmed: #b0ad9e;
+  --bg-page: #f5f0e6;
+  --bg-card: #ebe5d6;
+  --border: #d1c9b4;
+  --border-light: #ddd6c4;
+  --text-primary: #33302a;
+  --text-secondary: #524e45;
+  --text-muted: #8a8473;
+  --text-dimmed: #b0a994;
   --accent: #5a7a3a;
   --accent-hover: #4a6630;
-  --accent-bg: rgba(90, 122, 58, 0.08);
+  --accent-bg: rgba(90, 122, 58, 0.1);
   --accent-border: #a8c080;
-  --blockquote-bg: rgba(90, 122, 58, 0.05);
-  --table-row-even: rgba(240, 239, 232, 0.5);
-  --inline-code-color: #2c2c2a;
+  --blockquote-bg: rgba(90, 122, 58, 0.07);
+  --table-row-even: rgba(235, 229, 214, 0.6);
+  --inline-code-color: #33302a;
 }
 
 // ===== 全局样式覆盖 =====
