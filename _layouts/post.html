@@ -2,10 +2,12 @@
 layout: default
 ---
 
+{% include theme-toggle.html %}
+
 <style>
   .back-btn {
     display: inline-block;
-    color: #58a6ff;
+    color: var(--accent);
     font-size: 14px;
     text-decoration: none;
     margin-bottom: 20px;
@@ -13,16 +15,24 @@ layout: default
     transition: color 0.2s;
   }
   .back-btn:hover {
-    color: #79c0ff;
+    color: var(--accent-hover);
   }
   .back-btn::before {
     content: "← ";
   }
+  .post-header-toggle {
+    float: right;
+    margin-top: 4px;
+  }
 </style>
+
+<div class="post-header-toggle">
+  <button class="theme-toggle" type="button" aria-label="切换主题"></button>
+</div>
 
 <a class="back-btn" href="{{ '/' | relative_url }}">返回首页</a>
 
-<small>{{ page.date | date: "%Y-%m-%d" }}</small>
+<small style="color: var(--text-muted);">{{ page.date | date: "%Y-%m-%d" }}</small>
 <h1>{{ page.title }}</h1>
 
 {{content}}

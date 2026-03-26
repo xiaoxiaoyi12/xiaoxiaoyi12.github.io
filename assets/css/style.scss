@@ -46,6 +46,19 @@
 body {
   font-family: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
   line-height: 1.8;
+  background: var(--bg-page);
+}
+
+// ===== Hacker theme background overrides =====
+
+body, header, #main_content {
+  background-color: var(--bg-page) !important;
+}
+header h1, header h2 {
+  color: var(--text-primary) !important;
+}
+header p {
+  color: var(--text-secondary) !important;
 }
 
 // 去掉 hacker 主题的箭头和终端风格
@@ -59,7 +72,7 @@ h1::before, h2::before {
 
 #main_content {
   h1, h2, h3, h4 {
-    color: #c9d1d9;
+    color: var(--text-primary);
     font-weight: 600;
     margin-top: 1.6em;
     margin-bottom: 0.6em;
@@ -70,17 +83,17 @@ h1::before, h2::before {
   h2 {
     font-size: 1.4em;
     padding-bottom: 0.3em;
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid var(--border);
   }
   h3 { font-size: 1.15em; }
 
   p {
-    color: #b0b8c1;
+    color: var(--text-secondary);
     margin-bottom: 1em;
   }
 
   a {
-    color: #58a6ff;
+    color: var(--accent);
     text-decoration: none;
 
     &:hover {
@@ -89,7 +102,7 @@ h1::before, h2::before {
   }
 
   ul, ol {
-    color: #b0b8c1;
+    color: var(--text-secondary);
     padding-left: 1.5em;
 
     li {
@@ -100,8 +113,8 @@ h1::before, h2::before {
 
   // 行内代码
   code {
-    background: #161b22;
-    color: #e6edf3;
+    background: var(--bg-card);
+    color: var(--inline-code-color);
     padding: 0.2em 0.5em;
     border-radius: 4px;
     font-size: 0.9em;
@@ -110,8 +123,8 @@ h1::before, h2::before {
 
   // 代码块
   pre {
-    background: #161b22;
-    border: 1px solid #21262d;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 16px;
     overflow-x: auto;
@@ -126,11 +139,11 @@ h1::before, h2::before {
 
   // 引用块
   blockquote {
-    border-left: 3px solid #3b82f6;
+    border-left: 3px solid var(--accent);
     padding: 0.5em 1em;
     margin: 1em 0;
-    color: #8b949e;
-    background: rgba(56, 130, 246, 0.05);
+    color: var(--text-muted);
+    background: var(--blockquote-bg);
     border-radius: 0 6px 6px 0;
   }
 
@@ -142,26 +155,26 @@ h1::before, h2::before {
 
     th, td {
       padding: 10px 14px;
-      border: 1px solid #21262d;
+      border: 1px solid var(--border);
       text-align: left;
-      color: #b0b8c1;
+      color: var(--text-secondary);
     }
 
     th {
-      background: #161b22;
-      color: #c9d1d9;
+      background: var(--bg-card);
+      color: var(--text-primary);
       font-weight: 600;
     }
 
     tr:nth-child(even) {
-      background: rgba(22, 27, 34, 0.5);
+      background: var(--table-row-even);
     }
   }
 
   // 水平线
   hr {
     border: none;
-    border-top: 1px solid #21262d;
+    border-top: 1px solid var(--border);
     margin: 2em 0;
   }
 
@@ -181,32 +194,32 @@ h1::before, h2::before {
 
   li {
     padding: 10px 0;
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid var(--border);
     transition: background 0.2s;
 
     &:hover {
-      background: rgba(56, 130, 246, 0.04);
+      background: var(--accent-bg);
     }
   }
 
   .post-date {
-    color: #8b949e;
+    color: var(--text-muted);
     margin-right: 14px;
     font-size: 0.88em;
   }
 
   a {
-    color: #c9d1d9;
+    color: var(--text-primary);
     text-decoration: none;
 
     &:hover {
-      color: #58a6ff;
+      color: var(--accent);
     }
   }
 }
 
 .note-category {
-  color: #58a6ff;
+  color: var(--accent);
   font-size: 1.05em;
   margin-top: 24px;
   margin-bottom: 6px;
@@ -214,7 +227,7 @@ h1::before, h2::before {
 }
 
 .empty-hint {
-  color: #484f58;
+  color: var(--text-dimmed);
   font-style: italic;
 }
 
@@ -223,9 +236,9 @@ h1::before, h2::before {
 .tag {
   display: inline-block;
   font-size: 12px;
-  color: #58a6ff;
-  border: 1px solid #1f3a5f;
-  background: rgba(56, 130, 246, 0.08);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
   padding: 1px 8px;
   border-radius: 12px;
   margin-left: 6px;
@@ -236,5 +249,5 @@ h1::before, h2::before {
 .post-tags {
   margin-top: 2em;
   padding-top: 1em;
-  border-top: 1px solid #21262d;
+  border-top: 1px solid var(--border);
 }
