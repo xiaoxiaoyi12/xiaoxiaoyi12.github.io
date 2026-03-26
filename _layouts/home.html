@@ -73,46 +73,49 @@ layout: default
   <nav class="top-nav">
     <button class="tab-btn active" data-tab="posts">文章</button>
     <button class="tab-btn" data-tab="notes">笔记</button>
-    <a class="tab-btn" href="{{ '/bookmark/' | relative_url }}" style="text-decoration:none;">书签</a>
+    <a
+      class="tab-btn"
+      href="{{ '/bookmark/' | relative_url }}"
+      style="text-decoration: none"
+      >bookmark</a
+    >
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="搜索文章和笔记...">
+      <input type="text" id="search-input" placeholder="搜索文章和笔记..." />
     </div>
   </nav>
 
   <div id="search-results" class="tab-content">
     <h2>搜索结果</h2>
     <ul class="post-list" id="search-list"></ul>
-    <p class="no-result" id="no-result" style="display:none;">未找到匹配内容</p>
+    <p class="no-result" id="no-result" style="display: none">未找到匹配内容</p>
   </div>
 
   <div id="tab-posts" class="tab-content active">
     <ul class="post-list">
       {% for post in site.posts %}
-        <li>
-          <span class="post-date">{{ post.date | date: "%Y-%m-%d" }}</span>
-          <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
-          {% for tag in post.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
-        </li>
+      <li>
+        <span class="post-date">{{ post.date | date: "%Y-%m-%d" }}</span>
+        <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+        {% for tag in post.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+      </li>
       {% endfor %}
     </ul>
   </div>
 
   <div id="tab-notes" class="tab-content">
-    {% assign grouped_notes = site.notes | sort: "date" | reverse | group_by_exp: "note", "note.category" %}
-    {% for group in grouped_notes %}
+    {% assign grouped_notes = site.notes | sort: "date" | reverse |
+    group_by_exp: "note", "note.category" %} {% for group in grouped_notes %}
     <h3 class="note-category">[{{ group.name }}]</h3>
     <ul class="post-list">
       {% for note in group.items %}
-        <li>
-          <span class="post-date">{{ note.date | date: "%Y-%m-%d" }}</span>
-          <a href="{{ note.url | relative_url }}">{{ note.title }}</a>
-          {% for tag in note.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
-        </li>
+      <li>
+        <span class="post-date">{{ note.date | date: "%Y-%m-%d" }}</span>
+        <a href="{{ note.url | relative_url }}">{{ note.title }}</a>
+        {% for tag in note.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+      </li>
       {% endfor %}
     </ul>
-    {% endfor %}
-
-    {% if site.notes.size == 0 %}
+    {% endfor %} {% if site.notes.size == 0 %}
     <p class="empty-hint">// 暂无笔记</p>
     {% endif %}
   </div>
