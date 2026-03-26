@@ -61,6 +61,18 @@ header p {
   color: var(--text-secondary) !important;
 }
 
+// Compact header spacing
+header {
+  padding-top: 10px !important;
+  padding-bottom: 0 !important;
+}
+
+// Reduce gap between header and content
+body > .container {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
 // 去掉 hacker 主题的箭头和终端风格
 header h1::before,
 header h2::before,
