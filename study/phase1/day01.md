@@ -141,7 +141,7 @@ POST /books, GET /books/:id, ...
 
 ## 今日产出
 
-- [ ]
+- [x] [Bookmark Reader 全栈技术设计方案](/notes/2026-04-07-bookmark-design/) — 功能清单、数据分析、架构图、技术选型、API 设计、目录结构、开发路线图
 
 ## 遗留问题
 

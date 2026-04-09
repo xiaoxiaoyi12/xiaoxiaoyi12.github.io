@@ -1,10 +1,15 @@
-# Bookmark Reader 全栈技术设计方案
+---
+title: "Bookmark Reader 全栈技术设计方案"
+date: 2026-04-07
+category: "架构设计"
+tags: [NestJS, PostgreSQL, Prisma, Fullstack, Architecture]
+---
 
-> **项目背景**：将 Bookmark 阅读器从纯前端应用升级为全栈应用，实现数据持久化、多设备同步、用户系统等能力
->
-> **技术栈**：React + TypeScript（前端）| NestJS（后端）| PostgreSQL（数据库）| Prisma（ORM）
->
-> **作者**：xiaoxiaoyi12 | **日期**：2026-04-07
+## 概述
+
+将 Bookmark 阅读器从纯前端应用升级为全栈应用，实现数据持久化、多设备同步、用户系统等能力。
+
+技术栈：React + TypeScript（前端）| NestJS（后端）| PostgreSQL（数据库）| Prisma（ORM）
 
 ---
 
