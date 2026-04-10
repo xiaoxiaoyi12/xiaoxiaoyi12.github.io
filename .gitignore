@@ -1,3 +1,4 @@
 .superpowers/
 .env
+.master-key
 node_modules/

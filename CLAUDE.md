@@ -84,13 +84,19 @@ study 目录下的每日笔记有 5 种模板：
 ## 文章加密工作流
 
 支持对任意文章（_posts/_notes/_readings/_thoughts/）进行 AES-256 加密。
+采用 **主密钥 + CEK（内容加密密钥）双层架构**，支持忘记密码后通过主恢复密钥找回。
+
+### 首次使用：初始化主恢复密钥
+1. 运行 `npm run init-master-key`
+2. 将生成的主恢复密钥保存到密码管理器等安全位置
+3. 主密钥保存在 `.master-key` 文件（已加入 .gitignore）
 
 ### 加密步骤
 1. 在文章 front matter 中添加 `protected: true`
 2. 可选：添加 `password: "自定义密码"`（不设则使用全局密码）
 3. 可选：添加 `password_hint: "提示信息"`
 4. 运行 `npm run encrypt`（或 `BLOG_PASSWORD=xxx npm run encrypt`）
-5. 脚本会加密正文、删除 password 字段、修改 layout 为 protected-post
+5. 脚本会：生成随机 CEK → 用 CEK 加密正文 → 用密码和主密钥分别加密 CEK
 6. 提交并推送
 
 ### 编辑加密文章
@@ -99,10 +105,37 @@ study 目录下的每日笔记有 5 种模板：
 3. 重新运行 `npm run encrypt`
 4. 提交并推送
 
+### 修改密码
+1. 运行 `npm run change-password`（或指定文件 `npm run change-password -- _thoughts/xxx.md`）
+2. 输入旧密码和新密码（只重新加密 CEK，密文不变）
+3. 也可通过环境变量：`OLD_PASSWORD=old NEW_PASSWORD=new npm run change-password`
+4. 提交并推送
+
+### 忘记密码恢复
+1. 运行 `npm run recover-password`（或指定文件）
+2. 输入主恢复密钥和新密码
+3. 也可通过环境变量：`MASTER_KEY=xxx NEW_PASSWORD=new npm run recover-password`
+4. 提交并推送
+
+### 旧格式迁移
+已有旧格式加密文章需迁移到新格式：
+1. 运行 `npm run migrate`（或指定文件）
+2. 输入原密码，脚本会自动转换为 CEK 架构
+
 ### 密码来源优先级
 1. 文章 front matter 中的 `password` 字段（单篇独立密码）
 2. 环境变量 `BLOG_PASSWORD`（全局密码）
 3. 交互式输入
+
+### 脚本清单
+| 命令 | 说明 |
+|------|------|
+| `npm run init-master-key` | 生成主恢复密钥 |
+| `npm run encrypt` | 加密文章 |
+| `npm run decrypt` | 解密文章（还原为明文编辑） |
+| `npm run change-password` | 修改密码（只重加密 CEK） |
+| `npm run recover-password` | 忘记密码时用主密钥恢复 |
+| `npm run migrate` | 旧格式迁移到新格式 |
 
 ## VS Code 锚点跳转
 

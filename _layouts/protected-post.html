@@ -163,10 +163,19 @@ layout: default
 
 <script>
 (function() {
-  var SALT_HEX = "{{ page.salt }}";
   var KEY_SIZE = 256 / 32;  // CryptoJS uses word count: 8 words = 256 bits
   var ITERATIONS = 100000;
   var pageUrl = window.location.pathname;
+
+  // 新格式字段（CEK 架构）
+  var ENCRYPTED_KEY = "{{ page.encrypted_key }}";
+  var KEY_SALT_HEX = "{{ page.key_salt }}";
+
+  // 旧格式字段（直接密码加密）
+  var SALT_HEX = "{{ page.salt }}";
+
+  // 判断是否为新格式
+  var isNewFormat = ENCRYPTED_KEY && ENCRYPTED_KEY !== '' && KEY_SALT_HEX && KEY_SALT_HEX !== '';
 
   // 检查 sessionStorage 中的缓存密码
   var cachedPwd = sessionStorage.getItem('blog-pwd-' + pageUrl);
@@ -195,34 +204,62 @@ layout: default
     }
   });
 
+  /**
+   * AES-256-CBC 解密辅助函数
+   * @param {string} payload - "IV_hex:Base64_ciphertext"
+   * @param {CryptoJS.lib.WordArray} key - 256-bit key
+   * @returns {string} 解密后的字符串
+   */
+  function aesDecrypt(payload, key) {
+    var colonIdx = payload.indexOf(':');
+    if (colonIdx === -1) throw new Error('Invalid payload format');
+
+    var ivHex = payload.substring(0, colonIdx);
+    var cipherBase64 = payload.substring(colonIdx + 1);
+    var iv = CryptoJS.enc.Hex.parse(ivHex);
+
+    var decrypted = CryptoJS.AES.decrypt(cipherBase64, key, {
+      iv: iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
+
+    return decrypted.toString(CryptoJS.enc.Utf8);
+  }
+
   function tryDecrypt(password) {
     try {
-      var payload = document.getElementById('encrypted-payload').textContent.trim();
+      var contentPayload = document.getElementById('encrypted-payload').textContent.trim();
+      contentPayload = contentPayload.replace(/<\/?p>/g, '').trim();
 
-      // 清理 Jekyll 可能添加的 HTML 标签
-      payload = payload.replace(/<\/?p>/g, '').trim();
+      var plaintext;
 
-      var colonIdx = payload.indexOf(':');
-      if (colonIdx === -1) throw new Error('Invalid payload format');
+      if (isNewFormat) {
+        // 新格式：密码 → 解密 encrypted_key → 得到 CEK → 解密内容
+        var keySalt = CryptoJS.enc.Hex.parse(KEY_SALT_HEX);
+        var pwdKey = CryptoJS.PBKDF2(password, keySalt, {
+          keySize: KEY_SIZE,
+          iterations: ITERATIONS,
+          hasher: CryptoJS.algo.SHA256
+        });
 
-      var ivHex = payload.substring(0, colonIdx);
-      var cipherBase64 = payload.substring(colonIdx + 1);
+        // 解密 encrypted_key 得到 CEK（hex 字符串）
+        var cekHex = aesDecrypt(ENCRYPTED_KEY, pwdKey);
+        if (!cekHex || cekHex.length === 0) throw new Error('CEK decryption failed');
 
-      var salt = CryptoJS.enc.Hex.parse(SALT_HEX);
-      var key = CryptoJS.PBKDF2(password, salt, {
-        keySize: KEY_SIZE,
-        iterations: ITERATIONS,
-        hasher: CryptoJS.algo.SHA256
-      });
-      var iv = CryptoJS.enc.Hex.parse(ivHex);
-
-      var decrypted = CryptoJS.AES.decrypt(cipherBase64, key, {
-        iv: iv,
-        mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.Pkcs7
-      });
-
-      var plaintext = decrypted.toString(CryptoJS.enc.Utf8);
+        // 用 CEK 解密文章内容
+        var cek = CryptoJS.enc.Hex.parse(cekHex);
+        plaintext = aesDecrypt(contentPayload, cek);
+      } else {
+        // 旧格式：密码直接派生密钥解密内容
+        var salt = CryptoJS.enc.Hex.parse(SALT_HEX);
+        var key = CryptoJS.PBKDF2(password, salt, {
+          keySize: KEY_SIZE,
+          iterations: ITERATIONS,
+          hasher: CryptoJS.algo.SHA256
+        });
+        plaintext = aesDecrypt(contentPayload, key);
+      }
 
       if (!plaintext || plaintext.length === 0) {
         throw new Error('Empty decryption result');
@@ -234,7 +271,7 @@ layout: default
       document.getElementById('encrypted-payload').style.display = 'none';
       document.getElementById('decrypted-content').innerHTML = html;
       document.getElementById('decrypted-content').style.display = 'block';
-      document.getElementById('lock-icon').innerHTML = '&#128275;'; // 🔓
+      document.getElementById('lock-icon').innerHTML = '&#128275;'; // unlocked
 
       // 缓存密码到 sessionStorage
       sessionStorage.setItem('blog-pwd-' + pageUrl, password);

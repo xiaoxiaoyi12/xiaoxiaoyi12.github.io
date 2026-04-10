@@ -2,6 +2,10 @@
   "private": true,
   "scripts": {
     "encrypt": "node scripts/encrypt.js",
-    "decrypt": "node scripts/decrypt.js"
+    "decrypt": "node scripts/decrypt.js",
+    "change-password": "node scripts/change-password.js",
+    "recover-password": "node scripts/recover-password.js",
+    "init-master-key": "node scripts/init-master-key.js",
+    "migrate": "node scripts/migrate.js"
   }
 }

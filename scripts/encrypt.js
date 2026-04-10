@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * 博客文章加密脚本
+ * 博客文章加密脚本（主密钥版）
  *
- * 扫描 _posts/, _notes/, _readings/, _thoughts/ 中标记了 protected: true 的文件，
- * 使用 AES-256-CBC 加密正文内容。
+ * 使用 CEK（内容加密密钥）+ 双重加密架构：
+ *   1. 随机生成 CEK 加密文章正文
+ *   2. 用户密码加密 CEK → encrypted_key
+ *   3. 主恢复密钥加密 CEK → recovery_key
  *
  * 用法：
  *   npm run encrypt
@@ -16,126 +18,42 @@
  *   3. 交互式输入
  */
 
+const {
+  parseFrontMatter,
+  rebuildFrontMatter,
+  generateCEK,
+  encryptCEK,
+  encryptContent,
+  loadMasterKey,
+  scanFiles,
+  ask,
+  ROOT,
+} = require('./crypto-utils');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
-const readline = require('readline');
-
-const CONTENT_DIRS = ['_posts', '_notes', '_readings', '_thoughts'];
-const ROOT = path.resolve(__dirname, '..');
-const ITERATIONS = 100000;
-const KEY_LENGTH = 32; // 256 bits
-const IV_LENGTH = 16;
-const SALT_LENGTH = 16;
-
-function parseFrontMatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!match) return null;
-
-  const fmRaw = match[1];
-  const body = match[2];
-
-  // Simple YAML parser for flat key-value pairs
-  const fm = {};
-  for (const line of fmRaw.split('\n')) {
-    const kvMatch = line.match(/^(\w[\w_]*)\s*:\s*(.*)$/);
-    if (kvMatch) {
-      let val = kvMatch[2].trim();
-      // Handle quoted strings
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-        val = val.slice(1, -1);
-      }
-      // Handle booleans
-      if (val === 'true') val = true;
-      else if (val === 'false') val = false;
-      fm[kvMatch[1]] = val;
-    } else {
-      // Preserve lines we can't parse (like arrays)
-    }
-  }
-
-  return { fm, fmRaw, body };
-}
-
-function rebuildFrontMatter(fmRaw, changes) {
-  let lines = fmRaw.split('\n');
-
-  // Apply removals
-  if (changes.remove) {
-    for (const key of changes.remove) {
-      lines = lines.filter(line => !line.match(new RegExp(`^${key}\\s*:`)));
-    }
-  }
-
-  // Apply updates/additions
-  if (changes.set) {
-    for (const [key, value] of Object.entries(changes.set)) {
-      const idx = lines.findIndex(line => line.match(new RegExp(`^${key}\\s*:`)));
-      const formatted = typeof value === 'string' && value.includes(' ')
-        ? `${key}: "${value}"`
-        : `${key}: ${value}`;
-      if (idx >= 0) {
-        lines[idx] = formatted;
-      } else {
-        lines.push(formatted);
-      }
-    }
-  }
-
-  return lines.join('\n');
-}
-
-function encrypt(plaintext, password, salt) {
-  const key = crypto.pbkdf2Sync(password, salt, ITERATIONS, KEY_LENGTH, 'sha256');
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-
-  let encrypted = cipher.update(plaintext, 'utf8', 'base64');
-  encrypted += cipher.final('base64');
-
-  return iv.toString('hex') + ':' + encrypted;
-}
-
-function askPassword() {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    rl.question('请输入加密密码 (BLOG_PASSWORD): ', (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
-}
 
 async function main() {
   let globalPassword = process.env.BLOG_PASSWORD || '';
   let encryptedCount = 0;
   let skippedCount = 0;
 
+  // 加载主恢复密钥
+  const masterKey = loadMasterKey();
+  if (!masterKey) {
+    console.error('未找到主恢复密钥！请先运行: npm run init-master-key');
+    process.exit(1);
+  }
+
+  // 扫描待加密文件
+  const allFiles = scanFiles({ protected: true });
   const filesToEncrypt = [];
 
-  // Scan all content directories
-  for (const dir of CONTENT_DIRS) {
-    const dirPath = path.join(ROOT, dir);
-    if (!fs.existsSync(dirPath)) continue;
-
-    const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.md'));
-    for (const file of files) {
-      const filePath = path.join(dirPath, file);
-      const content = fs.readFileSync(filePath, 'utf8');
-      const parsed = parseFrontMatter(content);
-
-      if (!parsed) continue;
-      if (parsed.fm.protected !== true) continue;
-      if (parsed.fm.encrypted === true) {
-        skippedCount++;
-        continue;
-      }
-
-      filesToEncrypt.push({ filePath, file, dir, content, parsed });
+  for (const f of allFiles) {
+    if (f.parsed.fm.encrypted === true) {
+      skippedCount++;
+      continue;
     }
+    filesToEncrypt.push(f);
   }
 
   if (filesToEncrypt.length === 0) {
@@ -151,7 +69,7 @@ async function main() {
     console.log(`  - ${f.dir}/${f.file}`);
   }
 
-  // Determine passwords
+  // 确定每个文件的密码
   for (const f of filesToEncrypt) {
     const perPostPassword = typeof f.parsed.fm.password === 'string' ? f.parsed.fm.password : '';
 
@@ -160,8 +78,7 @@ async function main() {
     } else if (globalPassword) {
       f.password = globalPassword;
     } else {
-      // Ask once
-      globalPassword = await askPassword();
+      globalPassword = await ask('请输入加密密码 (BLOG_PASSWORD): ');
       if (!globalPassword) {
         console.error('未提供密码，退出。');
         process.exit(1);
@@ -170,22 +87,35 @@ async function main() {
     }
   }
 
-  // Encrypt each file
+  // 加密每个文件
   for (const f of filesToEncrypt) {
-    const salt = crypto.randomBytes(SALT_LENGTH);
-    const ciphertext = encrypt(f.parsed.body, f.password, salt);
+    // 1. 生成随机 CEK
+    const cek = generateCEK();
 
-    // Rebuild front matter
+    // 2. 用 CEK 加密文章正文
+    const { ciphertext, salt: contentSalt } = encryptContent(f.parsed.body, cek);
+
+    // 3. 用用户密码加密 CEK
+    const { payload: encKeyPayload, salt: keySalt } = encryptCEK(cek, f.password);
+
+    // 4. 用主恢复密钥加密 CEK
+    const { payload: recKeyPayload, salt: recSalt } = encryptCEK(cek, masterKey);
+
+    // 5. 重建 front matter
     const newFmRaw = rebuildFrontMatter(f.parsed.fmRaw, {
       remove: ['password'],
       set: {
         encrypted: true,
-        salt: salt.toString('hex'),
         layout: 'protected-post',
+        salt: contentSalt,
+        encrypted_key: encKeyPayload,
+        key_salt: keySalt,
+        recovery_key: recKeyPayload,
+        recovery_salt: recSalt,
       },
     });
 
-    // Write back
+    // 6. 写回文件
     const newContent = `---\n${newFmRaw}\n---\n{% raw %}${ciphertext}{% endraw %}\n`;
     fs.writeFileSync(f.filePath, newContent, 'utf8');
 
