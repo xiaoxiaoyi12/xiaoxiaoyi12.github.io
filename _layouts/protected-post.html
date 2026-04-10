@@ -63,6 +63,21 @@ layout: default
     border-color: var(--accent, #4ec9b0);
     box-shadow: 0 0 0 2px var(--accent-bg, rgba(78,201,176,0.1));
   }
+  .toggle-pwd-btn {
+    background: transparent;
+    border: 1px solid var(--border-light, #444);
+    color: var(--text-secondary, #aaa);
+    padding: 8px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    line-height: 1;
+  }
+  .toggle-pwd-btn:hover {
+    border-color: var(--accent, #4ec9b0);
+    color: var(--text-primary, #e0e0e0);
+  }
   .decrypt-btn {
     background: var(--accent, #4ec9b0);
     color: #fff;
@@ -117,6 +132,7 @@ layout: default
   <div class="password-input-row">
     <input type="password" id="password-input" class="password-input"
            placeholder="输入密码..." autofocus />
+    <button type="button" id="toggle-pwd" class="toggle-pwd-btn" title="显示/隐藏密码">&#128065;</button>
     <button id="decrypt-btn" class="decrypt-btn">解锁</button>
   </div>
   <p id="decrypt-error" class="decrypt-error" style="display:none">密码错误，请重试。</p>
@@ -148,6 +164,14 @@ layout: default
   if (cachedPwd) {
     tryDecrypt(cachedPwd);
   }
+
+  document.getElementById('toggle-pwd').addEventListener('click', function() {
+    var input = document.getElementById('password-input');
+    var isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    this.innerHTML = isHidden ? '&#128064;' : '&#128065;';
+    input.focus();
+  });
 
   document.getElementById('decrypt-btn').addEventListener('click', function() {
     var pwd = document.getElementById('password-input').value;
