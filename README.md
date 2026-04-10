@@ -6,24 +6,48 @@
 
 ## 简介
 
-这是一个个人每日记录博客，用于记录日常的工作内容和学习笔记。网站使用 Jekyll 的 [Hacker 主题](https://github.com/pages-themes/hacker)，风格简洁。
+这是一个个人博客，用于记录日常工作、学习笔记、阅读心得和生活感想。网站使用 Jekyll 的 [Hacker 主题](https://github.com/pages-themes/hacker)，支持深色/浅色主题切换，部分文章支持 AES 加密保护。
 
 ## 内容分类
 
 - **文章**（`_posts/`）：每日工作与学习日志
 - **笔记**（`_notes/`）：学习笔记，按类别分组展示
+- **阅读**（`_readings/`）：阅读笔记，按类别分组展示
+- **感想**（`_thoughts/`）：生活感想与随笔
 
 ## 项目结构
 
 ```
 ├── _config.yml          # Jekyll 全局配置
 ├── _layouts/
-│   └── home.html        # 首页布局模板
+│   ├── home.html        # 首页布局模板
+│   ├── post.html        # 文章布局
+│   └── protected-post.html  # 加密文章布局
 ├── _posts/              # 日志文章
 ├── _notes/              # 学习笔记（自定义集合）
+├── _readings/           # 阅读笔记（自定义集合）
+├── _thoughts/           # 生活感想（自定义集合）
+├── scripts/
+│   ├── encrypt.js       # 文章加密脚本
+│   └── decrypt.js       # 文章解密脚本
 ├── assets/css/
 │   └── style.scss       # 自定义样式
+├── logs/
+│   └── CHANGELOG.md     # 版本改动记录
+├── bookmark/            # bookmark 阅读器（子项目）
 └── index.md             # 首页入口
+```
+
+## 文章加密
+
+支持对任意文章进行 AES-256 加密，即使查看网页源码也无法读取内容。
+
+```bash
+# 在文章 front matter 中添加 protected: true，然后运行：
+BLOG_PASSWORD=你的密码 npm run encrypt
+
+# 需要编辑时解密：
+BLOG_PASSWORD=你的密码 npm run decrypt
 ```
 
 ## 本地开发

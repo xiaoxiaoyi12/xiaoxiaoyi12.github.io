@@ -11,6 +11,11 @@
 ```
 _posts/          → 每日博客日志（格式：YYYY-MM-DD-daily-log.md）
 _notes/          → 学习笔记文章（格式：YYYY-MM-DD-<topic-slug>.md）
+_readings/       → 阅读笔记（格式：YYYY-MM-DD-<book-slug>.md）
+_thoughts/       → 生活感想（格式：YYYY-MM-DD-<topic-slug>.md）
+scripts/         → 工具脚本
+  ├── encrypt.js → 加密标记了 protected: true 的文章
+  └── decrypt.js → 解密文章（用于编辑）
 plan/            → 90 天学习计划（只读，不要修改除非用户要求）
   ├── README.md
   ├── phase1-foundation-backend.md   (Day 1-20)
@@ -75,6 +80,29 @@ study 目录下的每日笔记有 5 种模板：
 - 日志提交信息：`Add daily log YYYY-MM-DD`
 - 推送到 master 分支
 - bookmark 子项目通过 GitHub Actions 部署，使用 `keep_files: true` 避免覆盖博客内容
+
+## 文章加密工作流
+
+支持对任意文章（_posts/_notes/_readings/_thoughts/）进行 AES-256 加密。
+
+### 加密步骤
+1. 在文章 front matter 中添加 `protected: true`
+2. 可选：添加 `password: "自定义密码"`（不设则使用全局密码）
+3. 可选：添加 `password_hint: "提示信息"`
+4. 运行 `npm run encrypt`（或 `BLOG_PASSWORD=xxx npm run encrypt`）
+5. 脚本会加密正文、删除 password 字段、修改 layout 为 protected-post
+6. 提交并推送
+
+### 编辑加密文章
+1. 运行 `npm run decrypt`（或指定文件 `npm run decrypt -- _thoughts/xxx.md`）
+2. 编辑明文内容
+3. 重新运行 `npm run encrypt`
+4. 提交并推送
+
+### 密码来源优先级
+1. 文章 front matter 中的 `password` 字段（单篇独立密码）
+2. 环境变量 `BLOG_PASSWORD`（全局密码）
+3. 交互式输入
 
 ## VS Code 锚点跳转
 

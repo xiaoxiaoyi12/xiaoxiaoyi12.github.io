@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "scripts": {
+    "encrypt": "node scripts/encrypt.js",
+    "decrypt": "node scripts/decrypt.js"
+  }
+}

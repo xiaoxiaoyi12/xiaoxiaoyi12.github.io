@@ -13,6 +13,16 @@ layout: default
     margin-bottom: 24px;
     gap: 10px;
   }
+  .tab-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .tab-scroll::-webkit-scrollbar { display: none; }
   .tab-btn {
     background: none;
     border: 1px solid var(--border-light);
@@ -24,6 +34,7 @@ layout: default
     font-family: inherit;
     border-radius: 6px;
     transition: all 0.2s;
+    white-space: nowrap;
   }
   .tab-btn:hover {
     color: var(--text-primary);
@@ -39,6 +50,7 @@ layout: default
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
   }
   .search-box input {
     background: var(--bg-page);
@@ -48,7 +60,7 @@ layout: default
     font-size: 14px;
     font-family: inherit;
     border-radius: 6px;
-    width: 220px;
+    width: 180px;
     transition: border-color 0.2s;
   }
   .search-box input::placeholder {
@@ -70,22 +82,30 @@ layout: default
     font-style: italic;
     margin-top: 12px;
   }
+  .lock-icon {
+    margin-left: 6px;
+    font-size: 0.85em;
+  }
 </style>
 
 <section id="main_content">
   {{ content }}
 
   <nav class="top-nav">
-    <button class="tab-btn active" data-tab="posts">文章</button>
-    <button class="tab-btn" data-tab="notes">笔记</button>
-    <a
-      class="tab-btn"
-      href="{{ '/bookmark/' | relative_url }}"
-      style="text-decoration: none"
-      >bookmark</a
-    >
+    <div class="tab-scroll">
+      <button class="tab-btn active" data-tab="posts">文章</button>
+      <button class="tab-btn" data-tab="notes">笔记</button>
+      <button class="tab-btn" data-tab="readings">阅读</button>
+      <button class="tab-btn" data-tab="thoughts">感想</button>
+      <a
+        class="tab-btn"
+        href="{{ '/bookmark/' | relative_url }}"
+        style="text-decoration: none"
+        >bookmark</a
+      >
+    </div>
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="搜索文章和笔记..." />
+      <input type="text" id="search-input" placeholder="搜索..." />
       <button class="theme-toggle" type="button" aria-label="切换主题"></button>
     </div>
   </nav>
@@ -102,6 +122,7 @@ layout: default
       <li>
         <span class="post-date">{{ post.date | date: "%Y-%m-%d" }}</span>
         <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+        {% if post.protected %}<span class="lock-icon">🔒</span>{% endif %}
         {% for tag in post.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
       </li>
       {% endfor %}
@@ -117,12 +138,49 @@ layout: default
       <li>
         <span class="post-date">{{ note.date | date: "%Y-%m-%d" }}</span>
         <a href="{{ note.url | relative_url }}">{{ note.title }}</a>
+        {% if note.protected %}<span class="lock-icon">🔒</span>{% endif %}
         {% for tag in note.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
       </li>
       {% endfor %}
     </ul>
     {% endfor %} {% if site.notes.size == 0 %}
     <p class="empty-hint">// 暂无笔记</p>
+    {% endif %}
+  </div>
+
+  <div id="tab-readings" class="tab-content">
+    {% assign grouped_readings = site.readings | sort: "date" | reverse |
+    group_by_exp: "item", "item.category" %} {% for group in grouped_readings %}
+    <h3 class="note-category">[{{ group.name }}]</h3>
+    <ul class="post-list">
+      {% for item in group.items %}
+      <li>
+        <span class="post-date">{{ item.date | date: "%Y-%m-%d" }}</span>
+        <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
+        {% if item.protected %}<span class="lock-icon">🔒</span>{% endif %}
+        {% for tag in item.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endfor %} {% if site.readings.size == 0 %}
+    <p class="empty-hint">// 暂无阅读笔记</p>
+    {% endif %}
+  </div>
+
+  <div id="tab-thoughts" class="tab-content">
+    {% assign sorted_thoughts = site.thoughts | sort: "date" | reverse %}
+    <ul class="post-list">
+      {% for item in sorted_thoughts %}
+      <li>
+        <span class="post-date">{{ item.date | date: "%Y-%m-%d" }}</span>
+        <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
+        {% if item.protected %}<span class="lock-icon">🔒</span>{% endif %}
+        {% for tag in item.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% if site.thoughts.size == 0 %}
+    <p class="empty-hint">// 暂无生活感想</p>
     {% endif %}
   </div>
 </section>
@@ -136,13 +194,21 @@ layout: default
     {% for note in site.notes %}
       { title: {{ note.title | jsonify }}, date: "{{ note.date | date: '%Y-%m-%d' }}", url: "{{ note.url | relative_url }}", type: "笔记", tags: {{ note.tags | jsonify | default: "[]" }} },
     {% endfor %}
+    {% for item in site.readings %}
+      { title: {{ item.title | jsonify }}, date: "{{ item.date | date: '%Y-%m-%d' }}", url: "{{ item.url | relative_url }}", type: "阅读", tags: {{ item.tags | jsonify | default: "[]" }} },
+    {% endfor %}
+    {% for item in site.thoughts %}
+      { title: {{ item.title | jsonify }}, date: "{{ item.date | date: '%Y-%m-%d' }}", url: "{{ item.url | relative_url }}", type: "感想", tags: {{ item.tags | jsonify | default: "[]" }} },
+    {% endfor %}
   ];
 
   // Tab 切换
-  var tabs = document.querySelectorAll('.tab-btn');
+  var tabs = document.querySelectorAll('.tab-btn[data-tab]');
   var tabContents = {
     posts: document.getElementById('tab-posts'),
-    notes: document.getElementById('tab-notes')
+    notes: document.getElementById('tab-notes'),
+    readings: document.getElementById('tab-readings'),
+    thoughts: document.getElementById('tab-thoughts')
   };
   var searchResults = document.getElementById('search-results');
   var searchInput = document.getElementById('search-input');
@@ -172,7 +238,9 @@ layout: default
       searchResults.classList.remove('active');
       // 恢复当前激活的 tab
       var activeTab = document.querySelector('.tab-btn.active');
-      tabContents[activeTab.dataset.tab].classList.add('active');
+      if (activeTab && activeTab.dataset.tab) {
+        tabContents[activeTab.dataset.tab].classList.add('active');
+      }
       return;
     }
 

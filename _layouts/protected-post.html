@@ -1,0 +1,218 @@
+---
+layout: default
+---
+
+{% include theme-toggle.html %}
+
+<style>
+  .back-btn {
+    display: inline-block;
+    color: var(--accent);
+    font-size: 14px;
+    text-decoration: none;
+    margin-bottom: 20px;
+    padding: 4px 0;
+    transition: color 0.2s;
+  }
+  .back-btn:hover {
+    color: var(--accent-hover);
+  }
+  .back-btn::before {
+    content: "\2190 ";
+  }
+  .post-header-toggle {
+    float: right;
+    margin-top: 4px;
+  }
+  .protected-form {
+    max-width: 420px;
+    margin: 2em 0;
+    padding: 24px;
+    background: var(--bg-card, #1a1a2e);
+    border: 1px solid var(--border, #333);
+    border-radius: 8px;
+  }
+  .protected-notice {
+    color: var(--text-secondary, #aaa);
+    margin-bottom: 16px;
+    font-size: 15px;
+  }
+  .password-hint {
+    color: var(--text-muted, #888);
+    font-size: 0.9em;
+    margin-bottom: 12px;
+    font-style: italic;
+  }
+  .password-input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .password-input {
+    flex: 1;
+    background: var(--bg-page, #0d1117);
+    border: 1px solid var(--border-light, #444);
+    color: var(--text-primary, #e0e0e0);
+    padding: 8px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    border-radius: 6px;
+    transition: border-color 0.2s;
+  }
+  .password-input:focus {
+    outline: none;
+    border-color: var(--accent, #4ec9b0);
+    box-shadow: 0 0 0 2px var(--accent-bg, rgba(78,201,176,0.1));
+  }
+  .decrypt-btn {
+    background: var(--accent, #4ec9b0);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-family: inherit;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .decrypt-btn:hover {
+    opacity: 0.85;
+  }
+  .decrypt-error {
+    color: #e74c3c;
+    font-size: 0.9em;
+    margin-top: 8px;
+  }
+  .protected-icon {
+    margin-right: 4px;
+  }
+  #decrypted-content img {
+    max-width: 100%;
+  }
+  #decrypted-content pre {
+    overflow-x: auto;
+  }
+</style>
+
+<div class="post-header-toggle">
+  <button class="theme-toggle" type="button" aria-label="切换主题"></button>
+</div>
+
+<a class="back-btn" href="{{ '/' | relative_url }}">返回首页</a>
+
+<small style="color: var(--text-muted);">{{ page.date | date: "%Y-%m-%d" }}</small>
+<h1><span class="protected-icon" id="lock-icon">&#128274;</span> {{ page.title }}</h1>
+
+{% if page.tags.size > 0 %}
+<div class="post-tags">
+  {% for tag in page.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+</div>
+{% endif %}
+
+<!-- 密码输入表单 -->
+<div id="password-form" class="protected-form">
+  <p class="protected-notice">此内容已加密，请输入密码查看。</p>
+  {% if page.password_hint %}
+  <p class="password-hint">提示：{{ page.password_hint }}</p>
+  {% endif %}
+  <div class="password-input-row">
+    <input type="password" id="password-input" class="password-input"
+           placeholder="输入密码..." autofocus />
+    <button id="decrypt-btn" class="decrypt-btn">解锁</button>
+  </div>
+  <p id="decrypt-error" class="decrypt-error" style="display:none">密码错误，请重试。</p>
+</div>
+
+<!-- 解密后的内容容器 -->
+<div id="decrypted-content" style="display:none"></div>
+
+<!-- 加密载荷（隐藏） -->
+<div id="encrypted-payload" style="display:none">{{ content }}</div>
+
+<!-- CryptoJS + marked.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
+        integrity="sha512-a+SUDuwNzXDvz4XrJ2dCLSm0IMEQpJPKjg47nQdFL7n0ZMPK9sSTBFLImeZhnEDyCHjjqAMv/aBMROWZ2MaRg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"
+        integrity="sha512-tjERRnkOx3+BI3Dv+VEQMkW1iMOXOqpDISMC3rUo0CVTIKM4cDIuw3GCOmI8gMBETZmuMLajBSHmqQKKBCROg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>
+(function() {
+  var SALT_HEX = "{{ page.salt }}";
+  var KEY_SIZE = 256 / 32;  // CryptoJS uses word count: 8 words = 256 bits
+  var ITERATIONS = 100000;
+  var pageUrl = window.location.pathname;
+
+  // 检查 sessionStorage 中的缓存密码
+  var cachedPwd = sessionStorage.getItem('blog-pwd-' + pageUrl);
+  if (cachedPwd) {
+    tryDecrypt(cachedPwd);
+  }
+
+  document.getElementById('decrypt-btn').addEventListener('click', function() {
+    var pwd = document.getElementById('password-input').value;
+    if (pwd) tryDecrypt(pwd);
+  });
+
+  document.getElementById('password-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var pwd = this.value;
+      if (pwd) tryDecrypt(pwd);
+    }
+  });
+
+  function tryDecrypt(password) {
+    try {
+      var payload = document.getElementById('encrypted-payload').textContent.trim();
+
+      // 清理 Jekyll 可能添加的 HTML 标签
+      payload = payload.replace(/<\/?p>/g, '').trim();
+
+      var colonIdx = payload.indexOf(':');
+      if (colonIdx === -1) throw new Error('Invalid payload format');
+
+      var ivHex = payload.substring(0, colonIdx);
+      var cipherBase64 = payload.substring(colonIdx + 1);
+
+      var salt = CryptoJS.enc.Hex.parse(SALT_HEX);
+      var key = CryptoJS.PBKDF2(password, salt, {
+        keySize: KEY_SIZE,
+        iterations: ITERATIONS,
+        hasher: CryptoJS.algo.SHA256
+      });
+      var iv = CryptoJS.enc.Hex.parse(ivHex);
+
+      var decrypted = CryptoJS.AES.decrypt(cipherBase64, key, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+      });
+
+      var plaintext = decrypted.toString(CryptoJS.enc.Utf8);
+
+      if (!plaintext || plaintext.length === 0) {
+        throw new Error('Empty decryption result');
+      }
+
+      // 解密成功：渲染 markdown
+      var html = marked.parse(plaintext);
+      document.getElementById('password-form').style.display = 'none';
+      document.getElementById('encrypted-payload').style.display = 'none';
+      document.getElementById('decrypted-content').innerHTML = html;
+      document.getElementById('decrypted-content').style.display = 'block';
+      document.getElementById('lock-icon').innerHTML = '&#128275;'; // 🔓
+
+      // 缓存密码到 sessionStorage
+      sessionStorage.setItem('blog-pwd-' + pageUrl, password);
+
+    } catch(e) {
+      // 显示错误提示
+      var errEl = document.getElementById('decrypt-error');
+      errEl.style.display = 'block';
+      setTimeout(function() {
+        errEl.style.display = 'none';
+      }, 3000);
+    }
+  }
+})();
+</script>

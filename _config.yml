@@ -10,10 +10,26 @@ collections:
   notes:
     output: true
     permalink: /notes/:name/
+  readings:
+    output: true
+    permalink: /readings/:name/
+  thoughts:
+    output: true
+    permalink: /thoughts/:name/
 
 defaults:
   - scope:
       path: ""
       type: "notes"
+    values:
+      layout: post
+  - scope:
+      path: ""
+      type: "readings"
+    values:
+      layout: post
+  - scope:
+      path: ""
+      type: "thoughts"
     values:
       layout: post
