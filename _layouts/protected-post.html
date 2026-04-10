@@ -47,12 +47,17 @@ layout: default
     display: flex;
     gap: 8px;
   }
-  .password-input {
+  .password-input-wrap {
     flex: 1;
+    position: relative;
+  }
+  .password-input {
+    width: 100%;
+    box-sizing: border-box;
     background: var(--bg-page, #0d1117);
     border: 1px solid var(--border-light, #444);
     color: var(--text-primary, #e0e0e0);
-    padding: 8px 14px;
+    padding: 8px 36px 8px 14px;
     font-size: 14px;
     font-family: inherit;
     border-radius: 6px;
@@ -64,18 +69,20 @@ layout: default
     box-shadow: 0 0 0 2px var(--accent-bg, rgba(78,201,176,0.1));
   }
   .toggle-pwd-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
     background: transparent;
-    border: 1px solid var(--border-light, #444);
-    color: var(--text-secondary, #aaa);
-    padding: 8px 10px;
-    font-size: 14px;
-    border-radius: 6px;
+    border: none;
+    color: var(--text-muted, #888);
+    padding: 2px 4px;
+    font-size: 16px;
     cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
     line-height: 1;
+    transition: color 0.2s;
   }
   .toggle-pwd-btn:hover {
-    border-color: var(--accent, #4ec9b0);
     color: var(--text-primary, #e0e0e0);
   }
   .decrypt-btn {
@@ -130,9 +137,11 @@ layout: default
   <p class="password-hint">提示：{{ page.password_hint }}</p>
   {% endif %}
   <div class="password-input-row">
-    <input type="password" id="password-input" class="password-input"
-           placeholder="输入密码..." autofocus />
-    <button type="button" id="toggle-pwd" class="toggle-pwd-btn" title="显示/隐藏密码">&#128065;</button>
+    <div class="password-input-wrap">
+      <input type="password" id="password-input" class="password-input"
+             placeholder="输入密码..." autofocus />
+      <button type="button" id="toggle-pwd" class="toggle-pwd-btn" title="显示/隐藏密码">&#128065;</button>
+    </div>
     <button id="decrypt-btn" class="decrypt-btn">解锁</button>
   </div>
   <p id="decrypt-error" class="decrypt-error" style="display:none">密码错误，请重试。</p>
