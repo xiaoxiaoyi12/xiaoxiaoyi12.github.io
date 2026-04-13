@@ -17,7 +17,10 @@
           <a id="a-title" href="{{ '/' | relative_url }}">
             <h1>{{ site.title | default: site.github.repository_name }}</h1>
           </a>
-          <a href="{{ site.github.repository_url }}" class="btn btn-github" style="margin: 0; white-space: nowrap;"><span class="icon"></span>View on GitHub</a>
+          <nav style="display:flex;align-items:center;gap:8px;">
+            <a href="{{ '/bookmark/' | relative_url }}" style="text-decoration:none;color:inherit;font-size:14px;font-weight:600;padding:4px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;">bookmark</a>
+            <a href="{{ '/admin/' | relative_url }}" style="text-decoration:none;color:inherit;font-size:14px;font-weight:600;padding:4px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;">创作</a>
+          </nav>
         </div>
         <h2>{{ site.description | default: site.github.project_tagline }}</h2>
       </div>
