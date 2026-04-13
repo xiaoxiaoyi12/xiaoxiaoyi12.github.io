@@ -1737,7 +1737,7 @@
       var type = document.getElementById('meta-type').value;
       var filename = Editor.isNew ? Editor.getFilename() : Editor.filePath.split('/')[1];
       var path = type + '/' + filename;
-      var fm = { layout: 'protected-post', title: document.getElementById('meta-title').value, date: document.getElementById('meta-date').value, tags: Editor.currentTags };
+      var fm = { layout: 'protected-post', title: document.getElementById('meta-title').value, date: document.getElementById('meta-date').value, tags: Editor.currentTags, source: 'admin' };
       if (type === '_notes' || type === '_readings') fm.category = document.getElementById('meta-category').value;
       fm.encrypted = true; fm.encrypted_key = result.encryptedKey; fm.key_salt = result.keySalt;
       if (hint) fm.password_hint = hint;
@@ -1784,15 +1784,16 @@
             var results = await Promise.all(batch.map(function(f) {
               return Storage.getFile(type + '/' + f.name).then(function(file) {
                 var parsed = FrontMatter.parse(file.content);
+                if (!parsed || parsed.fm.source !== 'admin') return null;
                 return {
                   name: f.name, sha: file.sha,
-                  title: parsed ? (parsed.fm.title || f.name) : f.name,
-                  date: parsed ? (parsed.fm.date || '') : '',
-                  tags: parsed ? (Array.isArray(parsed.fm.tags) ? parsed.fm.tags : []) : [],
-                  encrypted: parsed ? parsed.fm.encrypted === true : false,
-                  encryptedKey: parsed ? (parsed.fm.encrypted_key || '') : '',
-                  keySalt: parsed ? (parsed.fm.key_salt || '') : '',
-                  hint: parsed ? (parsed.fm.password_hint || '') : ''
+                  title: parsed.fm.title || f.name,
+                  date: parsed.fm.date || '',
+                  tags: Array.isArray(parsed.fm.tags) ? parsed.fm.tags : [],
+                  encrypted: parsed.fm.encrypted === true,
+                  encryptedKey: parsed.fm.encrypted_key || '',
+                  keySalt: parsed.fm.key_salt || '',
+                  hint: parsed.fm.password_hint || ''
                 };
               }).catch(function() { return null; });
             }));
@@ -1947,7 +1948,7 @@
 
       buildContent: function(extraFm) {
         var type = document.getElementById('meta-type').value;
-        var fm = { layout: 'post', title: document.getElementById('meta-title').value, date: document.getElementById('meta-date').value, tags: this.currentTags };
+        var fm = { layout: 'post', title: document.getElementById('meta-title').value, date: document.getElementById('meta-date').value, tags: this.currentTags, source: 'admin' };
         if (type === '_notes' || type === '_readings') fm.category = document.getElementById('meta-category').value;
         if (extraFm) Object.keys(extraFm).forEach(function(k) { fm[k] = extraFm[k]; });
         return FrontMatter.buildFile(fm, document.getElementById('editor-textarea').value);
