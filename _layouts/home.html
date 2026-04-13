@@ -5,17 +5,49 @@ layout: default
 {% include theme-toggle.html %}
 
 <style>
-  .top-nav {
+  /* Top bar: bookmark, 创作, theme toggle */
+  .top-bar {
     display: flex;
     align-items: center;
-    padding: 12px 0 20px;
+    padding: 12px 0;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     gap: 10px;
+  }
+  .top-bar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-link {
+    display: inline-block;
+    padding: 5px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-link:hover {
+    color: var(--text-primary);
+    border-color: var(--text-dimmed);
+  }
+  /* Tab bar: 文章、笔记、阅读、感想 + search */
+  .tab-bar {
+    display: flex;
+    align-items: center;
+    padding: 0 0 16px;
+    margin-bottom: 20px;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
   }
   .tab-scroll {
     display: flex;
-    gap: 10px;
+    gap: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -25,31 +57,29 @@ layout: default
   .tab-scroll::-webkit-scrollbar { display: none; }
   .tab-btn {
     background: none;
-    border: 1px solid var(--border-light);
+    border: none;
+    border-bottom: 2px solid transparent;
     color: var(--text-muted);
-    padding: 6px 18px;
+    padding: 8px 16px;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
-    border-radius: 6px;
+    border-radius: 0;
     transition: all 0.2s;
     white-space: nowrap;
   }
   .tab-btn:hover {
     color: var(--text-primary);
-    border-color: var(--text-dimmed);
   }
   .tab-btn.active {
     color: var(--accent);
-    border-color: var(--accent);
-    background: var(--accent-bg);
+    border-bottom-color: var(--accent);
   }
   .search-box {
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 8px;
     flex-shrink: 0;
   }
   .search-box input {
@@ -86,33 +116,34 @@ layout: default
     margin-left: 6px;
     font-size: 0.85em;
   }
+  @media (max-width: 600px) {
+    .top-bar { gap: 6px; }
+    .nav-link { padding: 4px 10px; font-size: 13px; }
+    .tab-btn { padding: 6px 12px; font-size: 14px; }
+    .search-box input { width: 120px; }
+  }
 </style>
 
 <section id="main_content">
   {{ content }}
 
-  <nav class="top-nav">
+  <div class="top-bar">
+    <div class="top-bar-actions">
+      <a class="nav-link" href="{{ '/bookmark/' | relative_url }}">bookmark</a>
+      <a class="nav-link" href="{{ '/admin/' | relative_url }}">创作</a>
+      <button class="theme-toggle" type="button" aria-label="切换主题"></button>
+    </div>
+  </div>
+
+  <nav class="tab-bar">
     <div class="tab-scroll">
       <button class="tab-btn active" data-tab="posts">文章</button>
       <button class="tab-btn" data-tab="notes">笔记</button>
       <button class="tab-btn" data-tab="readings">阅读</button>
       <button class="tab-btn" data-tab="thoughts">感想</button>
-      <a
-        class="tab-btn"
-        href="{{ '/bookmark/' | relative_url }}"
-        style="text-decoration: none"
-        >bookmark</a
-      >
-      <a
-        class="tab-btn"
-        href="{{ '/admin/' | relative_url }}"
-        style="text-decoration: none"
-        >创作</a
-      >
     </div>
     <div class="search-box">
       <input type="text" id="search-input" placeholder="搜索..." />
-      <button class="theme-toggle" type="button" aria-label="切换主题"></button>
     </div>
   </nav>
 
