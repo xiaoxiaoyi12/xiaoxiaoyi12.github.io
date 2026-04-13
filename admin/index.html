@@ -1188,10 +1188,8 @@
   <!-- ========== Navigation Bar ========== -->
   <nav class="admin-nav">
     <a class="nav-logo" href="/" style="text-decoration:none;color:inherit">← 首页</a>
-    <span id="mode-badge" class="mode-badge mode-github">● GitHub</span>
-    <a class="nav-link active" href="#list">文章</a>
-    <a class="nav-link" href="#edit">新建</a>
-    <a class="nav-link" href="#settings">设置</a>
+    <span id="mode-badge" class="mode-badge mode-github" style="display:none">● GitHub</span>
+    <a class="nav-link" href="#settings" style="margin-left:auto">设置</a>
     <button class="theme-toggle" type="button" aria-label="切换主题">🌙</button>
   </nav>
 
@@ -1337,20 +1335,20 @@
         a.classList.remove('active');
       });
 
+      var activeNav;
       if (route === 'list') {
         document.getElementById('page-list').classList.add('active');
-        document.querySelector('.nav-link[href="#list"]').classList.add('active');
         if (typeof ArticleList !== 'undefined') ArticleList.load();
       } else if (route === 'edit') {
         document.getElementById('page-edit').classList.add('active');
-        document.querySelector('.nav-link[href="#edit"]').classList.add('active');
         if (typeof Editor !== 'undefined') {
           if (parts[1] && parts[2]) Editor.loadArticle(parts[1], parts[2]);
           else Editor.newArticle();
         }
       } else if (route === 'settings') {
         document.getElementById('page-settings').classList.add('active');
-        document.querySelector('.nav-link[href="#settings"]').classList.add('active');
+        activeNav = document.querySelector('.nav-link[href="#settings"]');
+        if (activeNav) activeNav.classList.add('active');
         if (typeof SettingsPage !== 'undefined') SettingsPage.loadSettings();
       } else {
         location.hash = '#list';
