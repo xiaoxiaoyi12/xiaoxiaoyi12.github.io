@@ -6,6 +6,7 @@
     "change-password": "node scripts/change-password.js",
     "recover-password": "node scripts/recover-password.js",
     "init-master-key": "node scripts/init-master-key.js",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "admin": "node scripts/admin-server.js"
   }
 }
