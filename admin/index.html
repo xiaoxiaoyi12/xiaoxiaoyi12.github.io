@@ -951,6 +951,232 @@
     }
 
     /* ========================================
+       Settings Manager
+       ======================================== */
+    var Settings = {
+      _get: function(k, d) { var v = localStorage.getItem(k); return v !== null ? v : d; },
+      _set: function(k, v) { localStorage.setItem(k, v); },
+      githubToken: function(v) { if (v !== undefined) this._set('admin-github-token', v); return this._get('admin-github-token', ''); },
+      repo: function(v) { if (v !== undefined) this._set('admin-repo', v); return this._get('admin-repo', 'xiaoxiaoyi12/xiaoxiaoyi12.github.io'); },
+      branch: function(v) { if (v !== undefined) this._set('admin-branch', v); return this._get('admin-branch', 'master'); },
+      localUrl: function(v) { if (v !== undefined) this._set('admin-local-url', v); return this._get('admin-local-url', 'http://localhost:3001'); },
+      storageMode: function(v) { if (v !== undefined) this._set('admin-storage-mode', v); return this._get('admin-storage-mode', 'github'); },
+      theme: function(v) { if (v !== undefined) this._set('admin-theme', v); return this._get('admin-theme', 'system'); },
+      templates: function(v) {
+        if (v !== undefined) this._set('admin-templates', JSON.stringify(v));
+        var raw = this._get('admin-templates', '');
+        if (raw) try { return JSON.parse(raw); } catch(e) {}
+        return {
+          _posts: { title: '日志 - {date}', date: '{date}', tags: [], body: '' },
+          _notes: { title: '', date: '{date}', category: '', tags: [], body: '' },
+          _readings: { title: '', date: '{date}', category: '', tags: [], body: '' },
+          _thoughts: { title: '', date: '{date}', tags: [], body: '' }
+        };
+      }
+    };
+
+    /* ========================================
+       FrontMatter Parser / Builder
+       ======================================== */
+    var FrontMatter = {
+      parse: function(content) {
+        var match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+        if (!match) return null;
+        var fmRaw = match[1], body = match[2], fm = {};
+        fmRaw.split('\n').forEach(function(line) {
+          var kv = line.match(/^(\w[\w_]*)\s*:\s*(.*)$/);
+          if (!kv) return;
+          var key = kv[1], val = kv[2].trim();
+          if (val.startsWith('[') && val.endsWith(']')) {
+            fm[key] = val.slice(1, -1).split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+            return;
+          }
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'")))
+            val = val.slice(1, -1);
+          if (val === 'true') val = true;
+          else if (val === 'false') val = false;
+          fm[key] = val;
+        });
+        return { fm: fm, fmRaw: fmRaw, body: body };
+      },
+      build: function(fm) {
+        var lines = [];
+        for (var key in fm) {
+          var val = fm[key];
+          if (val === undefined || val === null) continue;
+          if (Array.isArray(val)) { lines.push(key + ': [' + val.join(', ') + ']'); }
+          else if (typeof val === 'string' && (val.includes(':') || val.includes('"') || val.includes(' ')))
+            { lines.push(key + ': "' + val.replace(/"/g, '\\"') + '"'); }
+          else { lines.push(key + ': ' + val); }
+        }
+        return lines.join('\n');
+      },
+      buildFile: function(fm, body) { return '---\n' + this.build(fm) + '\n---\n' + body; }
+    };
+
+    /* ========================================
+       GitHub API Client
+       ======================================== */
+    var GitHubAPI = {
+      request: async function(method, path, body) {
+        var token = Settings.githubToken();
+        if (!token) throw new Error('请先在设置中配置 GitHub Token');
+        var url = 'https://api.github.com/repos/' + Settings.repo() + path;
+        var opts = { method: method, headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' } };
+        if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+        var resp = await fetch(url, opts);
+        if (!resp.ok) { var err = await resp.json().catch(function() { return {}; }); throw new Error(err.message || 'API error ' + resp.status); }
+        return resp.json();
+      },
+      listFiles: async function(dir) {
+        var data = await this.request('GET', '/contents/' + dir + '?ref=' + Settings.branch());
+        return data.filter(function(f) { return f.name.endsWith('.md'); });
+      },
+      getFile: async function(filePath) {
+        var data = await this.request('GET', '/contents/' + filePath + '?ref=' + Settings.branch());
+        var content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+        return { content: content, sha: data.sha, name: data.name, path: data.path };
+      },
+      saveFile: async function(filePath, content, sha, message) {
+        var body = { message: message, content: btoa(unescape(encodeURIComponent(content))), branch: Settings.branch() };
+        if (sha) body.sha = sha;
+        return this.request('PUT', '/contents/' + filePath, body);
+      },
+      deleteFile: async function(filePath, sha, message) {
+        return this.request('DELETE', '/contents/' + filePath, { message: message, sha: sha, branch: Settings.branch() });
+      },
+      testConnection: async function() {
+        var resp = await fetch('https://api.github.com/user', { headers: { 'Authorization': 'token ' + Settings.githubToken() } });
+        if (!resp.ok) throw new Error('Token 无效');
+        return resp.json();
+      }
+    };
+
+    /* ========================================
+       Local API Client
+       ======================================== */
+    var LocalAPI = {
+      request: async function(method, path, body) {
+        var url = Settings.localUrl() + path;
+        var opts = { method: method, headers: {} };
+        if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+        var resp = await fetch(url, opts);
+        if (!resp.ok) throw new Error('Local API error ' + resp.status);
+        return resp.json();
+      },
+      healthCheck: async function() { return this.request('GET', '/api/health'); },
+      listFiles: async function(dir) { return this.request('GET', '/api/posts?type=' + dir); },
+      getFile: async function(filePath) {
+        var parts = filePath.split('/');
+        return this.request('GET', '/api/posts/' + parts[0] + '/' + parts[1]);
+      },
+      saveFile: async function(filePath, content, sha, message) {
+        var parts = filePath.split('/');
+        return this.request('POST', '/api/posts/' + parts[0] + '/' + parts[1], { content: content, message: message });
+      },
+      deleteFile: async function(filePath, sha, message) {
+        var parts = filePath.split('/');
+        return this.request('DELETE', '/api/posts/' + parts[0] + '/' + parts[1], { message: message });
+      }
+    };
+
+    /* ========================================
+       Storage Abstraction Layer
+       ======================================== */
+    var Storage = {
+      getBackend: async function() {
+        var mode = Settings.storageMode();
+        if (mode === 'local') return LocalAPI;
+        if (mode === 'github') return GitHubAPI;
+        try { await LocalAPI.healthCheck(); return LocalAPI; } catch(e) { return GitHubAPI; }
+      },
+      listFiles: async function(d) { return (await this.getBackend()).listFiles(d); },
+      getFile: async function(p) { return (await this.getBackend()).getFile(p); },
+      saveFile: async function(p, c, s, m) { return (await this.getBackend()).saveFile(p, c, s, m); },
+      deleteFile: async function(p, s, m) { return (await this.getBackend()).deleteFile(p, s, m); },
+      updateModeIndicator: async function() {
+        var badge = document.getElementById('mode-badge');
+        try {
+          var backend = await this.getBackend();
+          badge.textContent = backend === LocalAPI ? '● Local' : '● GitHub';
+          badge.className = 'mode-badge ' + (backend === LocalAPI ? 'mode-local' : 'mode-github');
+        } catch(e) { badge.textContent = '● Offline'; badge.className = 'mode-badge mode-offline'; }
+      }
+    };
+
+    /* ========================================
+       Browser Crypto Module (AES-256 / PBKDF2)
+       ======================================== */
+    var Crypto = {
+      ITERATIONS: 100000,
+      KEY_SIZE: 256 / 32,
+
+      aesEncrypt: function(plaintext, key) {
+        var iv = CryptoJS.lib.WordArray.random(16);
+        var encrypted = CryptoJS.AES.encrypt(plaintext, key, {
+          iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7
+        });
+        return iv.toString(CryptoJS.enc.Hex) + ':' + encrypted.ciphertext.toString(CryptoJS.enc.Base64);
+      },
+
+      aesDecrypt: function(payload, key) {
+        var colonIdx = payload.indexOf(':');
+        var ivHex = payload.substring(0, colonIdx);
+        var cipherBase64 = payload.substring(colonIdx + 1);
+        var iv = CryptoJS.enc.Hex.parse(ivHex);
+        var decrypted = CryptoJS.AES.decrypt(cipherBase64, key, {
+          iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7
+        });
+        return decrypted.toString(CryptoJS.enc.Utf8);
+      },
+
+      deriveKey: function(password, saltHex) {
+        var salt = CryptoJS.enc.Hex.parse(saltHex);
+        return CryptoJS.PBKDF2(password, salt, {
+          keySize: this.KEY_SIZE, iterations: this.ITERATIONS, hasher: CryptoJS.algo.SHA256
+        });
+      },
+
+      generateCEK: function() { return CryptoJS.lib.WordArray.random(32); },
+
+      encryptCEK: function(cek, password) {
+        var salt = CryptoJS.lib.WordArray.random(16);
+        var saltHex = salt.toString(CryptoJS.enc.Hex);
+        var key = this.deriveKey(password, saltHex);
+        var cekHex = cek.toString(CryptoJS.enc.Hex);
+        var payload = this.aesEncrypt(cekHex, key);
+        return { payload: payload, salt: saltHex };
+      },
+
+      decryptCEK: function(payload, password, keySaltHex) {
+        var key = this.deriveKey(password, keySaltHex);
+        var cekHex = this.aesDecrypt(payload, key);
+        if (!cekHex) throw new Error('CEK 解密失败');
+        return CryptoJS.enc.Hex.parse(cekHex);
+      },
+
+      encryptArticle: function(plaintext, password, hint) {
+        var cek = this.generateCEK();
+        var contentPayload = this.aesEncrypt(plaintext, cek);
+        var contentSalt = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex);
+        var cekResult = this.encryptCEK(cek, password);
+        return {
+          ciphertext: contentPayload,
+          contentSalt: contentSalt,
+          encryptedKey: cekResult.payload,
+          keySalt: cekResult.salt,
+          passwordHint: hint || ''
+        };
+      },
+
+      decryptArticle: function(cipherPayload, encryptedKey, keySalt, password) {
+        var cleaned = cipherPayload.replace(/\{%\s*raw\s*%\}/g, '').replace(/\{%\s*endraw\s*%\}/g, '').replace(/<\/?p>/g, '').trim();
+        var cek = this.decryptCEK(encryptedKey, password, keySalt);
+        return this.aesDecrypt(cleaned, cek);
+      }
+    };
+
+    /* ========================================
        DOMContentLoaded — Bootstrap
        ======================================== */
     document.addEventListener('DOMContentLoaded', function() {
@@ -958,6 +1184,7 @@
       var mode = localStorage.getItem('theme-mode') || 'system';
       updateToggleButtons(mode);
       router();
+      Storage.updateModeIndicator();
     });
   </script>
 
