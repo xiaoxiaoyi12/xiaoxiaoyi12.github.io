@@ -13,9 +13,11 @@ _posts/          → 每日博客日志（格式：YYYY-MM-DD-daily-log.md）
 _notes/          → 学习笔记文章（格式：YYYY-MM-DD-<topic-slug>.md）
 _readings/       → 阅读笔记（格式：YYYY-MM-DD-<book-slug>.md）
 _thoughts/       → 生活感想（格式：YYYY-MM-DD-<topic-slug>.md）
+admin/           → 在线管理后台 SPA（index.html 单文件）
 scripts/         → 工具脚本
   ├── encrypt.js → 加密标记了 protected: true 的文章
-  └── decrypt.js → 解密文章（用于编辑）
+  ├── decrypt.js → 解密文章（用于编辑）
+  └── admin-server.js → 本地管理服务（npm run admin）
 plan/            → 90 天学习计划（只读，不要修改除非用户要求）
   ├── README.md
   ├── phase1-foundation-backend.md   (Day 1-20)
@@ -136,6 +138,30 @@ study 目录下的每日笔记有 5 种模板：
 | `npm run change-password` | 修改密码（只重加密 CEK） |
 | `npm run recover-password` | 忘记密码时用主密钥恢复 |
 | `npm run migrate` | 旧格式迁移到新格式 |
+
+## 在线管理后台（/admin）
+
+浏览器端博客管理面板，支持文章 CRUD、加密/解密、Markdown 实时预览。
+
+- **访问地址**：https://xiaoxiaoyi12.github.io/admin/
+- **首次使用**：进入设置页（#settings），配置 GitHub Personal Access Token
+- **存储模式**：GitHub API（在线）或本地 Node 服务（离线），支持自动检测
+- **本地服务**：`npm run admin`（端口 3001，零依赖）
+- **技术**：纯 HTML/CSS/JS 单文件 SPA（admin/index.html），CryptoJS + marked.js CDN
+- **加密兼容**：浏览器端加密与 CLI 脚本、`protected-post.html` 完全兼容
+
+### 管理后台功能
+| 页面 | 路由 | 功能 |
+|------|------|------|
+| 文章列表 | #list | 四种内容类型切换、搜索、加密/解密/编辑/删除 |
+| Markdown 编辑器 | #edit | Front matter 表单、实时预览、草稿自动保存、加密发布 |
+| 设置 | #settings | GitHub 连接配置、本地服务配置、主题切换、文章模板 |
+
+### 相关脚本
+| 命令 | 说明 |
+|------|------|
+| `npm run admin` | 启动本地管理服务（端口 3001） |
+| `npm run test:crypto` | 运行加密兼容性测试（14 项） |
 
 ## VS Code 锚点跳转
 
