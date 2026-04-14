@@ -1685,6 +1685,12 @@
         parsed.fm.layout = 'protected-post';
         var newContent = FrontMatter.buildFile(parsed.fm, '{% raw %}\n' + result.ciphertext + '\n{% endraw %}');
         await Storage.saveFile(type + '/' + filename, newContent, file.sha, 'Encrypt ' + filename);
+        await ArticleIndex.add({
+          name: filename, type: type, title: parsed.fm.title || filename,
+          date: parsed.fm.date || '', tags: Array.isArray(parsed.fm.tags) ? parsed.fm.tags : [],
+          encrypted: true
+        });
+        ArticleIndex.reset();
         closeModal(); showToast('加密成功', 'success'); ArticleList.refresh();
       } catch(e) { showToast('加密失败: ' + e.message, 'error'); }
     }
@@ -1705,6 +1711,12 @@
         parsed.fm.layout = 'post';
         var newContent = FrontMatter.buildFile(parsed.fm, plaintext);
         await Storage.saveFile(type + '/' + filename, newContent, file.sha, 'Decrypt ' + filename);
+        await ArticleIndex.add({
+          name: filename, type: type, title: parsed.fm.title || filename,
+          date: parsed.fm.date || '', tags: Array.isArray(parsed.fm.tags) ? parsed.fm.tags : [],
+          encrypted: false
+        });
+        ArticleIndex.reset();
         closeModal(); showToast('解密成功', 'success'); ArticleList.refresh();
       } catch(e) { showToast('解密失败: ' + e.message, 'error'); }
     }
@@ -1733,10 +1745,52 @@
       var msg = Editor.isNew ? 'Add encrypted ' + filename : 'Update encrypted ' + filename;
       try {
         await Storage.saveFile(path, content, Editor.originalSha, msg);
+        await ArticleIndex.add({
+          name: filename, type: type,
+          title: document.getElementById('meta-title').value,
+          date: document.getElementById('meta-date').value,
+          tags: Editor.currentTags, encrypted: true
+        });
         Editor.clearDraft(); closeModal(); showToast('加密发布成功!', 'success');
-        ArticleList.loaded = false; navigateTo('#list');
+        ArticleList.loaded = false; ArticleIndex.reset(); navigateTo('#list');
       } catch(e) { showToast('发布失败: ' + e.message, 'error'); }
     }
+
+    /* ========================================
+       Article Index (admin/articles.json)
+       ======================================== */
+    var INDEX_PATH = 'admin/articles.json';
+    var ArticleIndex = {
+      _data: null, _sha: null,
+      load: async function() {
+        if (this._data) return this._data;
+        try {
+          var file = await Storage.getFile(INDEX_PATH);
+          this._sha = file.sha;
+          this._data = JSON.parse(file.content);
+        } catch(e) {
+          this._data = []; this._sha = null;
+        }
+        return this._data;
+      },
+      save: async function() {
+        var content = JSON.stringify(this._data, null, 2);
+        var result = await Storage.saveFile(INDEX_PATH, content, this._sha, 'Update article index');
+        this._sha = result.content ? result.content.sha : this._sha;
+      },
+      add: async function(entry) {
+        await this.load();
+        var idx = this._data.findIndex(function(a) { return a.type === entry.type && a.name === entry.name; });
+        if (idx >= 0) this._data[idx] = entry; else this._data.push(entry);
+        await this.save();
+      },
+      remove: async function(type, name) {
+        await this.load();
+        this._data = this._data.filter(function(a) { return !(a.type === type && a.name === name); });
+        await this.save();
+      },
+      reset: function() { this._data = null; this._sha = null; }
+    };
 
     /* ========================================
        ArticleList Module
@@ -1759,41 +1813,17 @@
         document.querySelector('.list-loading').style.display = 'flex';
         document.querySelector('.article-table').style.display = 'none';
         document.querySelector('.empty-state').style.display = 'none';
-        var all = [];
-        for (var t = 0; t < ALL_TYPES.length; t++) {
-          var type = ALL_TYPES[t];
-          try {
-            var files = await Storage.listFiles(type);
-            for (var i = 0; i < files.length; i += 5) {
-              var batch = files.slice(i, i + 5);
-              var results = await Promise.all(batch.map(function(f) {
-                return Storage.getFile(type + '/' + f.name).then(function(file) {
-                  var parsed = FrontMatter.parse(file.content);
-                  if (!parsed || parsed.fm.source !== 'admin') return null;
-                  return {
-                    name: f.name, sha: file.sha, type: type,
-                    title: parsed.fm.title || f.name,
-                    date: parsed.fm.date || '',
-                    tags: Array.isArray(parsed.fm.tags) ? parsed.fm.tags : [],
-                    encrypted: parsed.fm.encrypted === true,
-                    encryptedKey: parsed.fm.encrypted_key || '',
-                    keySalt: parsed.fm.key_salt || '',
-                    hint: parsed.fm.password_hint || ''
-                  };
-                }).catch(function() { return null; });
-              }));
-              all = all.concat(results.filter(Boolean));
-            }
-          } catch(e) { /* skip failed type */ }
-        }
-        all.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
-        this.allArticles = all;
+        try {
+          var all = await ArticleIndex.load();
+          all = all.slice().sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+          this.allArticles = all;
+        } catch(e) { this.allArticles = []; }
         this.loaded = true;
         document.querySelector('.list-loading').style.display = 'none';
         this.render();
       },
 
-      refresh: function() { this.loaded = false; this.allArticles = []; this.load(); },
+      refresh: function() { this.loaded = false; this.allArticles = []; ArticleIndex.reset(); this.load(); },
 
       render: function() {
         var filterType = document.getElementById('type-filter').value;
@@ -1824,17 +1854,20 @@
             + '<td data-label="状态">' + status + '</td>'
             + '<td data-label="操作" class="actions-cell">' + cryptoBtn
             + ' <button class="btn btn-ghost btn-sm" onclick="navigateTo(\'#edit/' + a.type + '/' + a.name + '\')">✏️</button>'
-            + ' <button class="btn btn-ghost btn-sm btn-danger-text" onclick="ArticleList.deleteArticle(\'' + a.type + '\',\'' + a.name + '\',\'' + (a.sha || '') + '\')">🗑️</button>'
+            + ' <button class="btn btn-ghost btn-sm btn-danger-text" onclick="ArticleList.deleteArticle(\'' + a.type + '\',\'' + a.name + '\')">🗑️</button>'
             + '</td></tr>';
         }).join('');
         document.querySelector('.article-table').style.display = articles.length ? 'table' : 'none';
         document.querySelector('.empty-state').style.display = articles.length ? 'none' : 'block';
       },
 
-      deleteArticle: async function(type, name, sha) {
+      deleteArticle: async function(type, name) {
         if (!confirm('确定删除 ' + name + '?')) return;
         try {
-          await Storage.deleteFile(type + '/' + name, sha, 'Delete ' + name);
+          var file = await Storage.getFile(type + '/' + name);
+          await Storage.deleteFile(type + '/' + name, file.sha, 'Delete ' + name);
+          await ArticleIndex.remove(type, name);
+          ArticleIndex.reset();
           showToast('已删除', 'success'); this.refresh();
         } catch(e) { showToast('删除失败: ' + e.message, 'error'); }
       }
@@ -1955,8 +1988,14 @@
         var msg = this.isNew ? 'Add ' + filename : 'Update ' + filename;
         try {
           await Storage.saveFile(path, content, this.originalSha, msg);
+          await ArticleIndex.add({
+            name: filename, type: type,
+            title: document.getElementById('meta-title').value,
+            date: document.getElementById('meta-date').value,
+            tags: this.currentTags, encrypted: false
+          });
           this.clearDraft(); showToast('发布成功!', 'success');
-          ArticleList.loaded = false; navigateTo('#list');
+          ArticleList.loaded = false; ArticleIndex.reset(); navigateTo('#list');
         } catch(e) { showToast('发布失败: ' + e.message, 'error'); }
       },
 
