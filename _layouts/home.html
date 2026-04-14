@@ -6,7 +6,7 @@ layout: default
   .home-toolbar {
     display: flex;
     align-items: center;
-    padding: 20px 0 16px;
+    padding: 20px 0 12px;
     gap: 4px;
   }
   .tab-scroll {
@@ -50,8 +50,8 @@ layout: default
     font-size: 13px;
     font-family: inherit;
     border-radius: 20px;
-    width: 160px;
-    transition: all 0.2s;
+    width: 140px;
+    transition: all 0.25s;
   }
   .search-box input::placeholder { color: var(--text-dimmed); }
   .search-box input:focus {
@@ -64,12 +64,82 @@ layout: default
   .no-result {
     color: var(--text-dimmed);
     font-style: italic;
-    margin-top: 12px;
+    padding: 20px 0;
   }
+
+  /* Feed item */
+  .feed { list-style: none; padding: 0; margin: 0; }
+  .feed-item {
+    display: block;
+    text-decoration: none !important;
+    padding: 16px 20px;
+    margin-bottom: 2px;
+    border-radius: 10px;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+    list-style-image: none !important;
+  }
+  .feed-item:hover {
+    background: var(--accent-bg);
+    border-left-color: var(--accent);
+  }
+  .feed-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .feed-date {
+    font-size: 12px;
+    color: var(--text-dimmed);
+    font-variant-numeric: tabular-nums;
+  }
+  .feed-type {
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .feed-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    line-height: 1.4;
+    text-shadow: none !important;
+  }
+  .feed-item:hover .feed-title {
+    color: var(--accent);
+  }
+  .feed-excerpt {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .feed-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .feed-lock {
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
   @media (max-width: 600px) {
     .tab-btn { padding: 6px 10px; font-size: 13px; }
-    .search-box input { width: 110px; }
+    .search-box input { width: 100px; }
     .search-box input:focus { width: 140px; }
+    .feed-item { padding: 12px 14px; }
+    .feed-title { font-size: 14px; }
+    .feed-excerpt { font-size: 12px; -webkit-line-clamp: 1; }
   }
 </style>
 
@@ -87,24 +157,27 @@ layout: default
   </nav>
 
   <div id="search-results" class="tab-content">
-    <h2>搜索结果</h2>
-    <ul class="post-list" id="search-list"></ul>
+    <ul class="feed" id="search-list"></ul>
     <p class="no-result" id="no-result" style="display: none">未找到匹配内容</p>
   </div>
 
   <div id="tab-posts" class="tab-content active">
-    <ul class="post-list">
+    <ul class="feed">
       {% for post in site.posts %}
-      <li>
-        <span class="post-date">{{ post.date | date: "%Y-%m-%d" }}</span>
-        <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
-        {% if post.protected %}<span class="lock-icon">🔒</span>{% endif %}
-        <span class="tags-inline">
-          {% for tag in post.tags limit:3 %}<span class="tag">{{ tag }}</span>{% endfor %}
-          {% assign tag_count = post.tags | size %}
-          {% if tag_count > 3 %}<span class="tags-more">+{{ tag_count | minus: 3 }}</span>{% endif %}
-        </span>
-      </li>
+      <a class="feed-item" href="{{ post.url | relative_url }}">
+        <div class="feed-meta">
+          <span class="feed-date">{{ post.date | date: "%Y-%m-%d" }}</span>
+          {% if post.protected %}<span class="feed-lock">🔒</span>{% endif %}
+        </div>
+        <div class="feed-title">{{ post.title | replace: "日志 - ", "" | replace: "日志 – ", "" }}</div>
+        {% if post.excerpt %}<div class="feed-excerpt">{{ post.excerpt | strip_html | truncate: 120 }}</div>{% endif %}
+        {% if post.tags.size > 0 %}
+        <div class="feed-tags">
+          {% for tag in post.tags limit:4 %}<span class="tag">{{ tag }}</span>{% endfor %}
+          {% assign tc = post.tags | size %}{% if tc > 4 %}<span class="tags-more">+{{ tc | minus: 4 }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </a>
       {% endfor %}
     </ul>
   </div>
@@ -113,85 +186,91 @@ layout: default
     {% assign grouped_notes = site.notes | sort: "date" | reverse | group_by_exp: "note", "note.category" %}
     {% for group in grouped_notes %}
     <h3 class="note-category">{{ group.name }}</h3>
-    <ul class="post-list">
+    <ul class="feed">
       {% for note in group.items %}
-      <li>
-        <span class="post-date">{{ note.date | date: "%Y-%m-%d" }}</span>
-        <a href="{{ note.url | relative_url }}">{{ note.title }}</a>
-        {% if note.protected %}<span class="lock-icon">🔒</span>{% endif %}
-        <span class="tags-inline">
-          {% for tag in note.tags limit:3 %}<span class="tag">{{ tag }}</span>{% endfor %}
-          {% assign tag_count = note.tags | size %}
-          {% if tag_count > 3 %}<span class="tags-more">+{{ tag_count | minus: 3 }}</span>{% endif %}
-        </span>
-      </li>
+      <a class="feed-item" href="{{ note.url | relative_url }}">
+        <div class="feed-meta">
+          <span class="feed-date">{{ note.date | date: "%Y-%m-%d" }}</span>
+          {% if note.protected %}<span class="feed-lock">🔒</span>{% endif %}
+        </div>
+        <div class="feed-title">{{ note.title }}</div>
+        {% if note.excerpt %}<div class="feed-excerpt">{{ note.excerpt | strip_html | truncate: 120 }}</div>{% endif %}
+        {% if note.tags.size > 0 %}
+        <div class="feed-tags">
+          {% for tag in note.tags limit:4 %}<span class="tag">{{ tag }}</span>{% endfor %}
+          {% assign tc = note.tags | size %}{% if tc > 4 %}<span class="tags-more">+{{ tc | minus: 4 }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </a>
       {% endfor %}
     </ul>
     {% endfor %}
-    {% if site.notes.size == 0 %}
-    <p class="empty-hint">暂无笔记</p>
-    {% endif %}
+    {% if site.notes.size == 0 %}<p class="empty-hint">暂无笔记</p>{% endif %}
   </div>
 
   <div id="tab-readings" class="tab-content">
     {% assign grouped_readings = site.readings | sort: "date" | reverse | group_by_exp: "item", "item.category" %}
     {% for group in grouped_readings %}
     <h3 class="note-category">{{ group.name }}</h3>
-    <ul class="post-list">
+    <ul class="feed">
       {% for item in group.items %}
-      <li>
-        <span class="post-date">{{ item.date | date: "%Y-%m-%d" }}</span>
-        <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
-        {% if item.protected %}<span class="lock-icon">🔒</span>{% endif %}
-        <span class="tags-inline">
-          {% for tag in item.tags limit:3 %}<span class="tag">{{ tag }}</span>{% endfor %}
-          {% assign tag_count = item.tags | size %}
-          {% if tag_count > 3 %}<span class="tags-more">+{{ tag_count | minus: 3 }}</span>{% endif %}
-        </span>
-      </li>
+      <a class="feed-item" href="{{ item.url | relative_url }}">
+        <div class="feed-meta">
+          <span class="feed-date">{{ item.date | date: "%Y-%m-%d" }}</span>
+          {% if item.protected %}<span class="feed-lock">🔒</span>{% endif %}
+        </div>
+        <div class="feed-title">{{ item.title }}</div>
+        {% if item.excerpt %}<div class="feed-excerpt">{{ item.excerpt | strip_html | truncate: 120 }}</div>{% endif %}
+        {% if item.tags.size > 0 %}
+        <div class="feed-tags">
+          {% for tag in item.tags limit:4 %}<span class="tag">{{ tag }}</span>{% endfor %}
+          {% assign tc = item.tags | size %}{% if tc > 4 %}<span class="tags-more">+{{ tc | minus: 4 }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </a>
       {% endfor %}
     </ul>
     {% endfor %}
-    {% if site.readings.size == 0 %}
-    <p class="empty-hint">暂无阅读笔记</p>
-    {% endif %}
+    {% if site.readings.size == 0 %}<p class="empty-hint">暂无阅读笔记</p>{% endif %}
   </div>
 
   <div id="tab-thoughts" class="tab-content">
     {% assign sorted_thoughts = site.thoughts | sort: "date" | reverse %}
-    <ul class="post-list">
+    <ul class="feed">
       {% for item in sorted_thoughts %}
-      <li>
-        <span class="post-date">{{ item.date | date: "%Y-%m-%d" }}</span>
-        <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
-        {% if item.protected %}<span class="lock-icon">🔒</span>{% endif %}
-        <span class="tags-inline">
-          {% for tag in item.tags limit:3 %}<span class="tag">{{ tag }}</span>{% endfor %}
-          {% assign tag_count = item.tags | size %}
-          {% if tag_count > 3 %}<span class="tags-more">+{{ tag_count | minus: 3 }}</span>{% endif %}
-        </span>
-      </li>
+      <a class="feed-item" href="{{ item.url | relative_url }}">
+        <div class="feed-meta">
+          <span class="feed-date">{{ item.date | date: "%Y-%m-%d" }}</span>
+          {% if item.protected %}<span class="feed-lock">🔒</span>{% endif %}
+        </div>
+        <div class="feed-title">{{ item.title }}</div>
+        {% if item.excerpt %}<div class="feed-excerpt">{{ item.excerpt | strip_html | truncate: 120 }}</div>{% endif %}
+        {% if item.tags.size > 0 %}
+        <div class="feed-tags">
+          {% for tag in item.tags limit:4 %}<span class="tag">{{ tag }}</span>{% endfor %}
+          {% assign tc = item.tags | size %}{% if tc > 4 %}<span class="tags-more">+{{ tc | minus: 4 }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </a>
       {% endfor %}
     </ul>
-    {% if site.thoughts.size == 0 %}
-    <p class="empty-hint">暂无生活感想</p>
-    {% endif %}
+    {% if site.thoughts.size == 0 %}<p class="empty-hint">暂无生活感想</p>{% endif %}
   </div>
 </section>
 
 <script>
   var allItems = [
     {% for post in site.posts %}
-      { title: {{ post.title | jsonify }}, date: "{{ post.date | date: '%Y-%m-%d' }}", url: "{{ post.url | relative_url }}", type: "文章", tags: {{ post.tags | jsonify | default: "[]" }} },
+      { title: {{ post.title | jsonify }}, date: "{{ post.date | date: '%Y-%m-%d' }}", url: "{{ post.url | relative_url }}", type: "文章", tags: {{ post.tags | jsonify | default: "[]" }}, excerpt: {{ post.excerpt | strip_html | truncate: 120 | jsonify }} },
     {% endfor %}
     {% for note in site.notes %}
-      { title: {{ note.title | jsonify }}, date: "{{ note.date | date: '%Y-%m-%d' }}", url: "{{ note.url | relative_url }}", type: "笔记", tags: {{ note.tags | jsonify | default: "[]" }} },
+      { title: {{ note.title | jsonify }}, date: "{{ note.date | date: '%Y-%m-%d' }}", url: "{{ note.url | relative_url }}", type: "笔记", tags: {{ note.tags | jsonify | default: "[]" }}, excerpt: {{ note.excerpt | strip_html | truncate: 120 | jsonify }} },
     {% endfor %}
     {% for item in site.readings %}
-      { title: {{ item.title | jsonify }}, date: "{{ item.date | date: '%Y-%m-%d' }}", url: "{{ item.url | relative_url }}", type: "阅读", tags: {{ item.tags | jsonify | default: "[]" }} },
+      { title: {{ item.title | jsonify }}, date: "{{ item.date | date: '%Y-%m-%d' }}", url: "{{ item.url | relative_url }}", type: "阅读", tags: {{ item.tags | jsonify | default: "[]" }}, excerpt: {{ item.excerpt | strip_html | truncate: 120 | jsonify }} },
     {% endfor %}
     {% for item in site.thoughts %}
-      { title: {{ item.title | jsonify }}, date: "{{ item.date | date: '%Y-%m-%d' }}", url: "{{ item.url | relative_url }}", type: "感想", tags: {{ item.tags | jsonify | default: "[]" }} },
+      { title: {{ item.title | jsonify }}, date: "{{ item.date | date: '%Y-%m-%d' }}", url: "{{ item.url | relative_url }}", type: "感想", tags: {{ item.tags | jsonify | default: "[]" }}, excerpt: {{ item.excerpt | strip_html | truncate: 120 | jsonify }} },
     {% endfor %}
   ];
 
@@ -249,15 +328,17 @@ layout: default
     } else {
       noResult.style.display = 'none';
       matches.forEach(function(item) {
-        var li = document.createElement('li');
-        var shownTags = item.tags.slice(0, 3);
+        var a = document.createElement('a');
+        a.className = 'feed-item';
+        a.href = item.url;
+        var shownTags = item.tags.slice(0, 4);
         var tagsHtml = shownTags.map(function(t) { return '<span class="tag">' + t + '</span>'; }).join('');
-        if (item.tags.length > 3) tagsHtml += '<span class="tags-more">+' + (item.tags.length - 3) + '</span>';
-        li.innerHTML = '<span class="post-date">' + item.date + '</span> '
-          + '<a href="' + item.url + '">' + item.title + '</a> '
-          + '<span class="tags-inline">' + tagsHtml + '</span>'
-          + '<span style="color:var(--text-dimmed);font-size:11px;margin-left:auto;">(' + item.type + ')</span>';
-        list.appendChild(li);
+        if (item.tags.length > 4) tagsHtml += '<span class="tags-more">+' + (item.tags.length - 4) + '</span>';
+        a.innerHTML = '<div class="feed-meta"><span class="feed-date">' + item.date + '</span><span class="feed-type">' + item.type + '</span></div>'
+          + '<div class="feed-title">' + item.title + '</div>'
+          + (item.excerpt ? '<div class="feed-excerpt">' + item.excerpt + '</div>' : '')
+          + (tagsHtml ? '<div class="feed-tags">' + tagsHtml + '</div>' : '');
+        list.appendChild(a);
       });
     }
   });
