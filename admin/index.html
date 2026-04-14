@@ -315,21 +315,22 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 8px 18px;
-      font-size: 14px;
+      padding: 7px 16px;
+      font-size: 13px;
       font-weight: 500;
       font-family: inherit;
-      border-radius: 20px;
+      border-radius: 8px;
       border: 1px solid var(--border-light);
       background: var(--bg-card);
-      color: var(--text-primary);
+      color: var(--text-secondary);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
       white-space: nowrap;
       line-height: 1.4;
     }
     .btn:hover {
-      border-color: var(--text-dimmed);
+      border-color: var(--accent-border);
+      color: var(--text-primary);
       background: var(--accent-bg);
     }
     .btn:active {
@@ -349,33 +350,34 @@
     .btn-primary:hover {
       background: var(--accent-hover);
       border-color: var(--accent-hover);
+      color: #fff;
     }
 
     .btn-danger {
       background: var(--danger-bg);
       color: var(--danger);
-      border-color: var(--danger);
+      border-color: transparent;
     }
     .btn-danger:hover {
       background: var(--danger);
       color: #fff;
+      border-color: var(--danger);
     }
 
     .btn-ghost {
       background: transparent;
       border-color: var(--border-light);
-      color: var(--text-secondary);
+      color: var(--text-muted);
     }
     .btn-ghost:hover {
       background: var(--accent-bg);
       color: var(--text-primary);
-      border-color: var(--text-dimmed);
+      border-color: var(--accent-border);
     }
 
     .btn-sm {
-      padding: 4px 12px;
+      padding: 5px 12px;
       font-size: 12px;
-      border-radius: 4px;
     }
 
     .btn-group {
@@ -526,7 +528,7 @@
       color: var(--accent);
       background: var(--accent-bg);
       border: 1px solid var(--accent-border);
-      border-radius: 12px;
+      border-radius: 10px;
       white-space: nowrap;
       line-height: 1.6;
     }
@@ -838,9 +840,9 @@
     }
     .type-select {
       padding: 7px 32px 7px 12px;
-      font-size: 14px;
+      font-size: 13px;
       font-family: inherit;
-      color: var(--text-primary);
+      color: var(--text-secondary);
       background: var(--bg-card);
       border: 1px solid var(--border-light);
       border-radius: 8px;
@@ -871,21 +873,22 @@
     }
     .tpl-tab {
       display: inline-block;
-      padding: 6px 14px;
-      font-size: 14px;
+      padding: 7px 16px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-muted);
       background: transparent;
-      border-radius: 6px;
+      border-radius: 8px;
       border: 1px solid var(--border-light);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
       white-space: nowrap;
       font-family: inherit;
     }
     .tpl-tab:hover {
       color: var(--text-primary);
       background: var(--accent-bg);
+      border-color: var(--accent-border);
     }
     .tpl-tab.active {
       color: var(--accent);
@@ -895,15 +898,15 @@
     .list-search {
       flex: 1;
       min-width: 160px;
-      padding: 8px 14px;
-      font-size: 14px;
+      padding: 7px 12px;
+      font-size: 13px;
       font-family: inherit;
       color: var(--text-primary);
-      background: var(--bg-page);
+      background: var(--bg-card);
       border: 1px solid var(--border-light);
-      border-radius: 20px;
+      border-radius: 8px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.2s;
     }
     .list-search:focus {
       border-color: var(--accent);
