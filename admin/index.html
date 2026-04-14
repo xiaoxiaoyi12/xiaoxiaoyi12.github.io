@@ -288,10 +288,6 @@
         font-size: 13px;
         padding: 6px 10px;
       }
-      .type-tab {
-        padding: 6px 10px;
-        font-size: 13px;
-      }
       .mode-badge {
         font-size: 10px;
         padding: 2px 8px;
@@ -836,35 +832,45 @@
     /* ========================================
        List Page — Filters & Search
        ======================================== */
-    .list-filters {
+    .list-toolbar {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 16px;
       flex-wrap: wrap;
     }
-    .type-tabs {
-      display: flex;
-      gap: 0;
+    .type-select {
+      padding: 7px 32px 7px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
       flex-shrink: 0;
     }
-    .type-tab {
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--text-muted);
-      padding: 6px 14px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-      white-space: nowrap;
+    .type-select:focus {
+      border-color: var(--accent);
     }
-    .type-tab:hover { color: var(--text-primary); }
-    .type-tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 160px;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-left: auto;
     }
     .tpl-tab {
       display: inline-block;
@@ -1182,12 +1188,15 @@
         flex-direction: column;
         align-items: flex-start;
       }
-      .list-filters {
-        flex-direction: column;
-        align-items: stretch;
+      .list-toolbar {
+        flex-wrap: wrap;
       }
-      .tab-scroll {
-        overflow-x: auto;
+      .search-group {
+        order: 3;
+        width: 100%;
+      }
+      .toolbar-actions {
+        margin-left: auto;
       }
     }
 
@@ -1240,22 +1249,22 @@
   <!-- ========== Page Containers ========== -->
   <div class="admin-container">
     <div id="page-list" class="page">
-      <div class="section-header">
-        <h2>文章管理</h2>
-        <div>
+      <div class="list-toolbar">
+        <select id="type-filter" class="type-select">
+          <option value="all">全部类型</option>
+          <option value="_posts">日志</option>
+          <option value="_notes">笔记</option>
+          <option value="_readings">阅读</option>
+          <option value="_thoughts">感想</option>
+        </select>
+        <div class="search-group">
+          <input class="list-search" id="list-search" placeholder="搜索标题或标签..." />
+          <button class="btn btn-ghost btn-sm" onclick="ArticleList.render()">查找</button>
+        </div>
+        <div class="toolbar-actions">
           <button class="btn btn-primary" onclick="navigateTo('#edit')">+ 新建文章</button>
           <button class="btn btn-ghost" onclick="ArticleList.refresh()">刷新</button>
         </div>
-      </div>
-      <div class="list-filters">
-        <div class="type-tabs" id="type-tabs">
-          <button class="type-tab active" data-value="all">全部</button>
-          <button class="type-tab" data-value="_posts">日志</button>
-          <button class="type-tab" data-value="_notes">笔记</button>
-          <button class="type-tab" data-value="_readings">阅读</button>
-          <button class="type-tab" data-value="_thoughts">感想</button>
-        </div>
-        <input class="list-search" placeholder="搜索..." />
       </div>
       <div class="list-loading" style="display:none"><div class="spinner"></div> 加载中...</div>
       <table class="article-table" style="display:none">
@@ -1859,13 +1868,7 @@
 
       init: function() {
         var self = this;
-        document.querySelectorAll('#type-tabs .type-tab').forEach(function(tab) {
-          tab.addEventListener('click', function() {
-            document.querySelectorAll('#type-tabs .type-tab').forEach(function(t) { t.classList.remove('active'); });
-            tab.classList.add('active');
-            self.render();
-          });
-        });
+        document.getElementById('type-filter').addEventListener('change', function() { self.render(); });
         document.querySelector('.list-search').addEventListener('input', function() { self.render(); });
       },
 
@@ -1887,8 +1890,7 @@
       refresh: function() { this.loaded = false; this.allArticles = []; ArticleIndex.reset(); this.load(); },
 
       render: function() {
-        var activeTab = document.querySelector('#type-tabs .type-tab.active');
-        var filterType = activeTab ? activeTab.dataset.value : 'all';
+        var filterType = document.getElementById('type-filter').value;
         var articles = this.allArticles;
         if (filterType !== 'all') {
           articles = articles.filter(function(a) { return a.type === filterType; });
