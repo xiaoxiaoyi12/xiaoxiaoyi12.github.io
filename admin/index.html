@@ -34,16 +34,17 @@
     [data-theme="dark"] {
       --bg-page: #0d1117;
       --bg-card: #161b22;
+      --bg-header: linear-gradient(135deg, #0d1117 0%, #111922 50%, #0f1923 100%);
       --border: #21262d;
       --border-light: #30363d;
       --text-primary: #c9d1d9;
       --text-secondary: #b0b8c1;
       --text-muted: #8b949e;
       --text-dimmed: #484f58;
-      --accent: #58a6ff;
-      --accent-hover: #79c0ff;
-      --accent-bg: rgba(56,130,246,0.08);
-      --accent-border: #1f3a5f;
+      --accent: #7eb8ff;
+      --accent-hover: #a5cfff;
+      --accent-bg: rgba(126, 184, 255, 0.06);
+      --accent-border: rgba(126, 184, 255, 0.15);
       --danger: #f85149;
       --danger-hover: #ff6e6a;
       --danger-bg: rgba(248,81,73,0.1);
@@ -51,8 +52,8 @@
       --success-bg: rgba(63,185,80,0.1);
       --warning: #d29922;
       --warning-bg: rgba(210,153,34,0.1);
-      --info: #58a6ff;
-      --info-bg: rgba(56,130,246,0.08);
+      --info: #7eb8ff;
+      --info-bg: rgba(126, 184, 255, 0.06);
       --shadow: rgba(0,0,0,0.3);
       --scrollbar-track: #161b22;
       --scrollbar-thumb: #30363d;
@@ -62,18 +63,19 @@
        CSS Variables — Light Theme
        ======================================== */
     [data-theme="light"] {
-      --bg-page: #f5f0e6;
-      --bg-card: #ebe5d6;
-      --border: #d1c9b4;
-      --border-light: #ddd6c4;
-      --text-primary: #33302a;
-      --text-secondary: #524e45;
-      --text-muted: #8a8473;
-      --text-dimmed: #b0a994;
-      --accent: #5a7a3a;
-      --accent-hover: #4a6630;
-      --accent-bg: rgba(90,122,58,0.1);
-      --accent-border: #a8c080;
+      --bg-page: #faf8f4;
+      --bg-card: #fff;
+      --bg-header: linear-gradient(135deg, #f0ece4 0%, #faf8f4 100%);
+      --border: #e5dfd2;
+      --border-light: #ece6d9;
+      --text-primary: #2c2a25;
+      --text-secondary: #5c574d;
+      --text-muted: #918b7e;
+      --text-dimmed: #c0b9a8;
+      --accent: #6b8f45;
+      --accent-hover: #587836;
+      --accent-bg: rgba(107, 143, 69, 0.06);
+      --accent-border: rgba(107, 143, 69, 0.2);
       --danger: #c93c37;
       --danger-hover: #b02e29;
       --danger-bg: rgba(201,60,55,0.1);
@@ -81,11 +83,11 @@
       --success-bg: rgba(45,138,62,0.1);
       --warning: #b5830d;
       --warning-bg: rgba(181,131,13,0.1);
-      --info: #5a7a3a;
-      --info-bg: rgba(90,122,58,0.1);
-      --shadow: rgba(0,0,0,0.08);
-      --scrollbar-track: #ebe5d6;
-      --scrollbar-thumb: #d1c9b4;
+      --info: #6b8f45;
+      --info-bg: rgba(107, 143, 69, 0.06);
+      --shadow: rgba(0,0,0,0.06);
+      --scrollbar-track: #faf8f4;
+      --scrollbar-thumb: #e5dfd2;
     }
 
     /* ========================================
@@ -140,14 +142,15 @@
        Admin Container
        ======================================== */
     .admin-container {
-      max-width: 1200px;
+      width: 90%;
+      max-width: 1000px;
       margin: 0 auto;
-      padding: 24px 20px 60px;
+      padding: 20px 0 60px;
     }
 
     @media (max-width: 768px) {
       .admin-container {
-        padding: 16px 12px 40px;
+        padding: 16px 0 40px;
       }
     }
 
@@ -157,41 +160,66 @@
     .admin-nav {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      background: var(--bg-card);
+      justify-content: space-between;
+      padding: 16px 0;
+      gap: 16px;
+      background: var(--bg-header);
       border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    }
+    .admin-nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 90%;
+      max-width: 1000px;
+      margin: 0 auto;
+      gap: 16px;
     }
 
-    .nav-logo {
-      font-size: 16px;
+    .nav-brand {
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .nav-brand-title {
+      font-size: 20px;
       font-weight: 700;
       color: var(--text-primary);
-      text-decoration: none;
-      margin-right: 12px;
-      white-space: nowrap;
+      letter-spacing: -0.3px;
     }
-    .nav-logo:hover {
+    .nav-brand-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .nav-brand:hover .nav-brand-title {
       color: var(--accent);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .nav-link {
       display: inline-block;
-      padding: 6px 14px;
-      font-size: 14px;
-      font-weight: 500;
+      text-decoration: none;
       color: var(--text-muted);
-      border-radius: 6px;
-      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      background: var(--bg-card);
+      cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
-      cursor: pointer;
     }
     .nav-link:hover {
-      color: var(--text-primary);
+      border-color: var(--accent-border);
+      color: var(--accent);
       background: var(--accent-bg);
     }
     .nav-link.active {
@@ -201,17 +229,19 @@
     }
 
     .theme-toggle {
-      background: none;
+      background: var(--bg-card);
       border: 1px solid var(--border-light);
-      border-radius: 6px;
-      padding: 5px 10px;
-      font-size: 16px;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 13px;
       cursor: pointer;
-      transition: border-color 0.2s;
+      transition: all 0.2s;
       line-height: 1;
     }
     .theme-toggle:hover {
-      border-color: var(--text-dimmed);
+      border-color: var(--accent-border);
+      color: var(--accent);
+      background: var(--accent-bg);
     }
 
     /* ========================================
@@ -243,17 +273,17 @@
     }
 
     @media (max-width: 600px) {
-      .admin-nav {
-        padding: 10px 12px;
-        gap: 6px;
+      .admin-nav-inner {
         flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 0;
       }
-      .nav-logo {
-        font-size: 14px;
-      }
+      .nav-brand-title { font-size: 17px; }
+      .nav-brand-desc { font-size: 12px; }
+      .nav-right { gap: 4px; }
       .nav-link {
+        font-size: 12px;
         padding: 5px 10px;
-        font-size: 13px;
       }
       .mode-badge {
         font-size: 10px;
@@ -289,7 +319,7 @@
       font-size: 14px;
       font-weight: 500;
       font-family: inherit;
-      border-radius: 6px;
+      border-radius: 20px;
       border: 1px solid var(--border-light);
       background: var(--bg-card);
       color: var(--text-primary);
@@ -379,7 +409,7 @@
       color: var(--text-primary);
       background: var(--bg-page);
       border: 1px solid var(--border-light);
-      border-radius: 6px;
+      border-radius: 8px;
       transition: border-color 0.2s, box-shadow 0.2s;
       outline: none;
     }
@@ -548,7 +578,7 @@
       padding: 10px 18px;
       font-size: 13px;
       font-weight: 500;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid var(--border-light);
       background: var(--bg-card);
       color: var(--text-primary);
@@ -673,7 +703,7 @@
     .table-wrapper {
       overflow-x: auto;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
     }
 
     /* ========================================
@@ -682,7 +712,7 @@
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 20px;
     }
     .card-title {
@@ -703,8 +733,8 @@
       gap: 12px;
     }
     .section-title {
-      font-size: 18px;
-      font-weight: 700;
+      font-size: 17px;
+      font-weight: 600;
       color: var(--text-primary);
     }
 
@@ -813,7 +843,7 @@
       color: var(--text-primary);
       background: var(--bg-page);
       border: 1px solid var(--border-light);
-      border-radius: 6px;
+      border-radius: 20px;
       outline: none;
       cursor: pointer;
       transition: border-color 0.2s;
@@ -848,13 +878,13 @@
     .list-search {
       flex: 1;
       min-width: 160px;
-      padding: 8px 12px;
+      padding: 8px 14px;
       font-size: 14px;
       font-family: inherit;
       color: var(--text-primary);
       background: var(--bg-page);
       border: 1px solid var(--border-light);
-      border-radius: 6px;
+      border-radius: 20px;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
@@ -930,7 +960,7 @@
       color: var(--text-primary);
       background: var(--bg-page);
       border: 1px solid var(--border-light);
-      border-radius: 6px;
+      border-radius: 8px;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
@@ -1178,12 +1208,17 @@
 
   <!-- ========== Navigation Bar ========== -->
   <nav class="admin-nav">
-    <a class="nav-logo" href="/">月光集市</a>
-    <span id="mode-badge" class="mode-badge mode-github" style="display:none">● GitHub</span>
-    <a class="nav-link" href="#list">文章</a>
-    <a class="nav-link" href="#settings">设置</a>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-      <button class="theme-toggle" type="button" aria-label="切换主题">🌙</button>
+    <div class="admin-nav-inner">
+      <a class="nav-brand" href="/">
+        <span class="nav-brand-title">依人相的月光集市</span>
+        <span class="nav-brand-desc">创作管理</span>
+      </a>
+      <div class="nav-right">
+        <span id="mode-badge" class="mode-badge mode-github" style="display:none">● GitHub</span>
+        <a class="nav-link" href="#list">文章</a>
+        <a class="nav-link" href="#settings">设置</a>
+        <button class="theme-toggle" type="button" aria-label="切换主题">🌙</button>
+      </div>
     </div>
   </nav>
 
