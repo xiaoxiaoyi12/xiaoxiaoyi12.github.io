@@ -170,8 +170,12 @@
       font-size: 16px;
       font-weight: 700;
       color: var(--text-primary);
-      margin-right: 4px;
+      text-decoration: none;
+      margin-right: 12px;
       white-space: nowrap;
+    }
+    .nav-logo:hover {
+      color: var(--accent);
     }
 
     .nav-link {
@@ -1174,10 +1178,11 @@
 
   <!-- ========== Navigation Bar ========== -->
   <nav class="admin-nav">
-    <a class="nav-logo" href="/" style="text-decoration:none;color:inherit">← 首页</a>
+    <a class="nav-logo" href="/">月光集市</a>
     <span id="mode-badge" class="mode-badge mode-github" style="display:none">● GitHub</span>
+    <a class="nav-link" href="#list">文章</a>
+    <a class="nav-link" href="#settings">设置</a>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-      <a class="nav-link" href="#settings">设置</a>
       <button class="theme-toggle" type="button" aria-label="切换主题">🌙</button>
     </div>
   </nav>
@@ -1211,10 +1216,7 @@
     </div>
     <div id="page-edit" class="page">
       <div class="section-header">
-        <div style="display:flex;align-items:center;gap:12px">
-          <button class="btn btn-ghost" onclick="navigateTo('#list')">← 返回</button>
-          <h2 id="editor-title">新建文章</h2>
-        </div>
+        <h2 id="editor-title">新建文章</h2>
         <div class="editor-actions">
           <button class="btn btn-ghost" onclick="Editor.saveDraft()">💾 草稿</button>
           <button class="btn btn-danger" onclick="Editor.encryptAndPublish()">🔒 加密发布</button>
@@ -1325,20 +1327,23 @@
         a.classList.remove('active');
       });
 
-      var activeNav;
       if (route === 'list') {
         document.getElementById('page-list').classList.add('active');
+        var listNav = document.querySelector('.nav-link[href="#list"]');
+        if (listNav) listNav.classList.add('active');
         if (typeof ArticleList !== 'undefined') ArticleList.load();
       } else if (route === 'edit') {
         document.getElementById('page-edit').classList.add('active');
+        var editNav = document.querySelector('.nav-link[href="#list"]');
+        if (editNav) editNav.classList.add('active');
         if (typeof Editor !== 'undefined') {
           if (parts[1] && parts[2]) Editor.loadArticle(parts[1], parts[2]);
           else Editor.newArticle();
         }
       } else if (route === 'settings') {
         document.getElementById('page-settings').classList.add('active');
-        activeNav = document.querySelector('.nav-link[href="#settings"]');
-        if (activeNav) activeNav.classList.add('active');
+        var settingsNav = document.querySelector('.nav-link[href="#settings"]');
+        if (settingsNav) settingsNav.classList.add('active');
         if (typeof SettingsPage !== 'undefined') SettingsPage.loadSettings();
       } else {
         location.hash = '#list';
