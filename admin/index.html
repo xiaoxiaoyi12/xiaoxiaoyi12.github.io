@@ -200,48 +200,51 @@
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 0;
     }
 
     .nav-link {
       display: inline-block;
       text-decoration: none;
       color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 500;
-      padding: 6px 14px;
-      border: 1px solid var(--border-light);
-      border-radius: 20px;
-      background: var(--bg-card);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: none;
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
     }
     .nav-link:hover {
-      border-color: var(--accent-border);
-      color: var(--accent);
-      background: var(--accent-bg);
+      color: var(--text-primary);
     }
     .nav-link.active {
       color: var(--accent);
-      border-color: var(--accent);
-      background: var(--accent-bg);
+      border-bottom-color: var(--accent);
+    }
+
+    .nav-sep {
+      width: 1px;
+      height: 16px;
+      background: var(--border-light);
+      margin: 0 4px;
     }
 
     .theme-toggle {
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: 20px;
-      padding: 6px 12px;
-      font-size: 13px;
+      background: none;
+      border: none;
+      padding: 6px 10px;
+      font-size: 15px;
       cursor: pointer;
       transition: all 0.2s;
       line-height: 1;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
     }
     .theme-toggle:hover {
-      border-color: var(--accent-border);
-      color: var(--accent);
-      background: var(--accent-bg);
+      color: var(--text-primary);
     }
 
     /* ========================================
@@ -280,10 +283,14 @@
       }
       .nav-brand-title { font-size: 17px; }
       .nav-brand-desc { font-size: 12px; }
-      .nav-right { gap: 4px; }
+      .nav-right { gap: 0; }
       .nav-link {
-        font-size: 12px;
-        padding: 5px 10px;
+        font-size: 13px;
+        padding: 6px 10px;
+      }
+      .type-tab {
+        padding: 6px 10px;
+        font-size: 13px;
       }
       .mode-badge {
         font-size: 10px;
@@ -836,21 +843,28 @@
       margin-bottom: 16px;
       flex-wrap: wrap;
     }
-    .type-filter {
-      padding: 8px 12px;
-      font-size: 14px;
-      font-family: inherit;
-      color: var(--text-primary);
-      background: var(--bg-page);
-      border: 1px solid var(--border-light);
-      border-radius: 20px;
-      outline: none;
-      cursor: pointer;
-      transition: border-color 0.2s;
+    .type-tabs {
+      display: flex;
+      gap: 0;
       flex-shrink: 0;
     }
-    .type-filter:focus {
-      border-color: var(--accent);
+    .type-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .type-tab:hover { color: var(--text-primary); }
+    .type-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
     }
     .tpl-tab {
       display: inline-block;
@@ -1217,6 +1231,7 @@
         <span id="mode-badge" class="mode-badge mode-github" style="display:none">● GitHub</span>
         <a class="nav-link" href="#list">文章</a>
         <a class="nav-link" href="#settings">设置</a>
+        <span class="nav-sep"></span>
         <button class="theme-toggle" type="button" aria-label="切换主题">🌙</button>
       </div>
     </div>
@@ -1233,14 +1248,14 @@
         </div>
       </div>
       <div class="list-filters">
-        <select id="type-filter" class="type-filter">
-          <option value="all">全部类型</option>
-          <option value="_posts">日志</option>
-          <option value="_notes">笔记</option>
-          <option value="_readings">阅读</option>
-          <option value="_thoughts">感想</option>
-        </select>
-        <input class="list-search" placeholder="搜索标题或标签..." />
+        <div class="type-tabs" id="type-tabs">
+          <button class="type-tab active" data-value="all">全部</button>
+          <button class="type-tab" data-value="_posts">日志</button>
+          <button class="type-tab" data-value="_notes">笔记</button>
+          <button class="type-tab" data-value="_readings">阅读</button>
+          <button class="type-tab" data-value="_thoughts">感想</button>
+        </div>
+        <input class="list-search" placeholder="搜索..." />
       </div>
       <div class="list-loading" style="display:none"><div class="spinner"></div> 加载中...</div>
       <table class="article-table" style="display:none">
@@ -1844,7 +1859,13 @@
 
       init: function() {
         var self = this;
-        document.getElementById('type-filter').addEventListener('change', function() { self.render(); });
+        document.querySelectorAll('#type-tabs .type-tab').forEach(function(tab) {
+          tab.addEventListener('click', function() {
+            document.querySelectorAll('#type-tabs .type-tab').forEach(function(t) { t.classList.remove('active'); });
+            tab.classList.add('active');
+            self.render();
+          });
+        });
         document.querySelector('.list-search').addEventListener('input', function() { self.render(); });
       },
 
@@ -1866,7 +1887,8 @@
       refresh: function() { this.loaded = false; this.allArticles = []; ArticleIndex.reset(); this.load(); },
 
       render: function() {
-        var filterType = document.getElementById('type-filter').value;
+        var activeTab = document.querySelector('#type-tabs .type-tab.active');
+        var filterType = activeTab ? activeTab.dataset.value : 'all';
         var articles = this.allArticles;
         if (filterType !== 'all') {
           articles = articles.filter(function(a) { return a.type === filterType; });
