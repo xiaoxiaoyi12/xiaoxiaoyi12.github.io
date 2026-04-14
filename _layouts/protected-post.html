@@ -2,8 +2,6 @@
 layout: default
 ---
 
-{% include theme-toggle.html %}
-
 <style>
   .back-btn {
     display: inline-block;
@@ -19,10 +17,6 @@ layout: default
   }
   .back-btn::before {
     content: "\2190 ";
-  }
-  .post-header-toggle {
-    float: right;
-    margin-top: 4px;
   }
   .protected-form {
     max-width: 420px;
@@ -114,10 +108,6 @@ layout: default
     overflow-x: auto;
   }
 </style>
-
-<div class="post-header-toggle">
-  <button class="theme-toggle" type="button" aria-label="切换主题"></button>
-</div>
 
 <a class="back-btn" href="{{ '/' | relative_url }}">返回首页</a>
 

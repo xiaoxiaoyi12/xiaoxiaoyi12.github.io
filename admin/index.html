@@ -8,7 +8,7 @@
   <!-- Theme init: set data-theme before body renders to avoid flash -->
   <script>
     (function() {
-      var mode = localStorage.getItem('theme-mode') || 'system';
+      var mode = localStorage.getItem('theme') || 'system';
       var theme;
       if (mode === 'system') {
         theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -1369,9 +1369,9 @@
     function initThemeToggle() {
       document.querySelectorAll('.theme-toggle').forEach(function(btn) {
         btn.addEventListener('click', function() {
-          var current = localStorage.getItem('theme-mode') || 'system';
+          var current = localStorage.getItem('theme') || 'system';
           var next = current === 'dark' ? 'light' : current === 'light' ? 'system' : 'dark';
-          localStorage.setItem('theme-mode', next);
+          localStorage.setItem('theme', next);
           applyTheme(next);
           updateToggleButtons(next);
         });
@@ -1419,7 +1419,7 @@
       branch: function(v) { if (v !== undefined) this._set('admin-branch', v); return this._get('admin-branch', 'master'); },
       localUrl: function(v) { if (v !== undefined) this._set('admin-local-url', v); return this._get('admin-local-url', 'http://localhost:3001'); },
       storageMode: function(v) { if (v !== undefined) this._set('admin-storage-mode', v); return this._get('admin-storage-mode', 'github'); },
-      theme: function(v) { if (v !== undefined) this._set('admin-theme', v); return this._get('admin-theme', 'system'); },
+      theme: function(v) { if (v !== undefined) localStorage.setItem('theme', v); return localStorage.getItem('theme') || 'system'; },
       templates: function(v) {
         if (v !== undefined) this._set('admin-templates', JSON.stringify(v));
         var raw = this._get('admin-templates', '');
@@ -2128,7 +2128,7 @@
        ======================================== */
     document.addEventListener('DOMContentLoaded', function() {
       initThemeToggle();
-      var mode = localStorage.getItem('theme-mode') || 'system';
+      var mode = localStorage.getItem('theme') || 'system';
       updateToggleButtons(mode);
       ArticleList.init();
       Editor.init();
