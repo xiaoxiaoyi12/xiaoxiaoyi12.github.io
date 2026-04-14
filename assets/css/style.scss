@@ -160,6 +160,9 @@ body > .container {
   margin-top: 0 !important;
   padding-top: 0 !important;
 }
+section {
+  margin-bottom: 0 !important;
+}
 
 // ===== Content Typography =====
 
@@ -167,11 +170,11 @@ body > .container {
   h1, h2, h3, h4 {
     color: var(--text-primary);
     font-weight: 600;
-    margin-top: 1.6em;
-    margin-bottom: 0.6em;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
     border-bottom: none;
   }
-  h1 { font-size: 1.7em; }
+  h1 { font-size: 1.5em; }
   h2 {
     font-size: 1.3em;
     padding-bottom: 0.3em;

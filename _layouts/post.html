@@ -3,29 +3,38 @@ layout: default
 ---
 
 <style>
+  .post-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0 0;
+  }
   .back-btn {
-    display: inline-block;
     color: var(--accent);
-    font-size: 14px;
+    font-size: 13px;
     text-decoration: none;
-    margin-bottom: 20px;
-    padding: 4px 0;
     transition: color 0.2s;
   }
-  .back-btn:hover {
-    color: var(--accent-hover);
+  .back-btn:hover { color: var(--accent-hover); }
+  .post-date-top {
+    font-size: 13px;
+    color: var(--text-dimmed);
+    font-variant-numeric: tabular-nums;
   }
-  .back-btn::before {
-    content: "← ";
+  .post-body h1:first-child {
+    margin-top: 0.6em;
   }
 </style>
 
-<a class="back-btn" href="{{ '/' | relative_url }}">返回首页</a>
+<div class="post-nav">
+  <a class="back-btn" href="{{ '/' | relative_url }}">← 返回首页</a>
+  <span class="post-date-top">{{ page.date | date: "%Y-%m-%d" }}</span>
+</div>
 
-<small style="color: var(--text-muted);">{{ page.date | date: "%Y-%m-%d" }}</small>
-<h1>{{ page.title }}</h1>
-
-{{content}}
+<div class="post-body">
+  <h1>{{ page.title | replace: "日志 - ", "" | replace: "日志 – ", "" }}</h1>
+  {{ content }}
+</div>
 
 {% if page.tags.size > 0 %}
 <div class="post-tags">
