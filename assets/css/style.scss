@@ -89,6 +89,8 @@ header {
     border-color: var(--accent);
     color: var(--accent) !important;
   }
+
+  text-shadow: none !important;
 }
 // Override theme-toggle circle styles when used in header
 button.theme-toggle.header-nav-btn {
