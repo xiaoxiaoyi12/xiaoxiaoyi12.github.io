@@ -133,7 +133,6 @@ header {
   font-weight: 600;
   padding: 6px 16px;
   border: none;
-  border-bottom: 2px solid transparent;
   border-radius: 0;
   background: none;
   cursor: pointer;
@@ -149,15 +148,6 @@ header {
   height: 16px;
   background: var(--border-light);
   margin: 0 4px;
-}
-button.theme-toggle.header-nav-btn {
-  width: auto !important;
-  height: auto !important;
-  border-radius: 0 !important;
-  padding: 6px 10px !important;
-  font-size: 15px;
-  line-height: 1;
-  border-bottom: 2px solid transparent;
 }
 
 // ===== Container =====
