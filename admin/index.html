@@ -1449,9 +1449,12 @@
     }
 
     function updateToggleButtons(mode) {
-      var icon = mode === 'dark' ? '🌙' : mode === 'light' ? '☀️' : '🖥️';
+      var icons = { dark: '🌙', light: '☀️', system: '🖥️' };
+      var labels = { dark: '暗色模式', light: '亮色模式', system: '跟随系统' };
       document.querySelectorAll('.theme-toggle').forEach(function(b) {
-        b.textContent = icon;
+        b.textContent = icons[mode];
+        b.setAttribute('title', labels[mode]);
+        b.setAttribute('aria-label', labels[mode]);
       });
     }
 
