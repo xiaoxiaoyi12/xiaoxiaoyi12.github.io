@@ -17,9 +17,10 @@
           <a id="a-title" href="{{ '/' | relative_url }}">
             <h1>{{ site.title | default: site.github.repository_name }}</h1>
           </a>
-          <nav style="display:flex;align-items:center;gap:8px;">
-            <a href="{{ '/bookmark/' | relative_url }}" style="text-decoration:none;color:inherit;font-size:14px;font-weight:600;padding:4px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;">bookmark</a>
-            <a href="{{ '/admin/' | relative_url }}" style="text-decoration:none;color:inherit;font-size:14px;font-weight:600;padding:4px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;">创作</a>
+          <nav class="header-nav">
+            <a class="header-nav-btn" href="{{ '/bookmark/' | relative_url }}">bookmark</a>
+            <a class="header-nav-btn" href="{{ '/admin/' | relative_url }}">创作</a>
+            <button class="theme-toggle header-nav-btn" type="button" aria-label="切换主题"></button>
           </nav>
         </div>
         <h2>{{ site.description | default: site.github.project_tagline }}</h2>
