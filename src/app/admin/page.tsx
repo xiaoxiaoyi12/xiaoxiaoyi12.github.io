@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient, getGitHubSettings } from '@/lib/github-api';
 import { TYPE_LABELS, ALL_TYPES } from '@/lib/types';
+import { useToast } from '@/components/admin/Toast';
 import type { ContentType } from '@/lib/types';
 
 interface ArticleEntry {
@@ -36,6 +37,7 @@ function parseFrontMatter(content: string) {
 
 export default function AdminListPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [articles, setArticles] = useState<ArticleEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -116,12 +118,34 @@ export default function AdminListPage() {
       const file = await client.getFile(article.path);
       await client.deleteFile(article.path, file.sha, `Delete ${article.name}`);
       setArticles(prev => prev.filter(a => a.path !== article.path));
+      toast('已删除', 'success');
     } catch (e) {
-      alert('删除失败: ' + (e instanceof Error ? e.message : '未知错误'));
+      toast('删除失败: ' + (e instanceof Error ? e.message : '未知错误'), 'error');
     }
   }
 
-  if (loading) return <div className="text-[var(--text-muted)] py-10">加载中...</div>;
+  if (loading) return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="h-7 w-24 bg-[var(--border-light)] rounded animate-pulse" />
+        <div className="h-9 w-24 bg-[var(--border-light)] rounded-lg animate-pulse" />
+      </div>
+      <div className="flex gap-2 mb-4">
+        <div className="h-8 w-20 bg-[var(--border-light)] rounded-lg animate-pulse" />
+        <div className="h-8 w-40 bg-[var(--border-light)] rounded-lg animate-pulse" />
+      </div>
+      <div className="space-y-0">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 py-3 border-b border-[var(--border)]">
+            <div className="h-4 w-20 bg-[var(--border-light)] rounded animate-pulse" />
+            <div className="h-4 w-12 bg-[var(--border-light)] rounded animate-pulse" />
+            <div className="h-4 flex-1 bg-[var(--border-light)] rounded animate-pulse" />
+            <div className="h-4 w-16 bg-[var(--border-light)] rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error) return (
     <div className="py-10">
       <p className="text-[var(--text-muted)] mb-4">{error}</p>

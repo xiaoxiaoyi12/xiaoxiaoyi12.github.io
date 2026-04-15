@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
 import TiptapEditor from '@/components/admin/TiptapEditor';
+import { useToast } from '@/components/admin/Toast';
 import { createClient } from '@/lib/github-api';
 import {
   dataUrlToRawBase64,
@@ -23,22 +24,48 @@ function buildFrontMatter(meta: { title: string; date: string; tags: string[]; c
   return lines.join('\n');
 }
 
+function generateSlug(title: string): string {
+  // Extract English words and numbers, ignore Chinese
+  const english = title.replace(/[^\w\s-]/g, '').trim();
+  if (english) {
+    return english.toLowerCase().replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 60);
+  }
+  // All Chinese: use a short random slug
+  return 'post-' + Date.now().toString(36);
+}
+
 export default function NewArticlePage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [type, setType] = useState<ContentType>('thoughts');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [slug, setSlug] = useState('');
+  const [slugManual, setSlugManual] = useState(false);
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [body, setBody] = useState('');
   const [publishing, setPublishing] = useState(false);
+  const isDirty = useRef(false);
+
+  // Track unsaved changes
+  useEffect(() => {
+    isDirty.current = !!(title || body);
+  }, [title, body]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty.current) { e.preventDefault(); }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   const publish = async () => {
-    if (!title) { alert('请输入标题'); return; }
-    if (!slug) { alert('请输入 slug'); return; }
+    if (!title) { toast('请输入标题', 'error'); return; }
+    if (!slug) { toast('请输入 slug', 'error'); return; }
     const client = createClient();
-    if (!client) { alert('请先配置 GitHub Token'); return; }
+    if (!client) { toast('请先配置 GitHub Token', 'error'); return; }
 
     setPublishing(true);
     try {
@@ -74,10 +101,11 @@ export default function NewArticlePage() {
         await client.saveFile(articlePath, content, null, `Add ${articleFilename}`);
       }
 
-      alert('已提交，约 2 分钟后生效');
+      isDirty.current = false;
+      toast('已提交，约 2 分钟后生效', 'success');
       router.push('/admin/');
     } catch (e) {
-      alert('发布失败: ' + (e instanceof Error ? e.message : '未知错误'));
+      toast('发布失败: ' + (e instanceof Error ? e.message : '未知错误'), 'error');
     }
     setPublishing(false);
   };
@@ -105,8 +133,14 @@ export default function NewArticlePage() {
 
       <FrontMatterForm
         type={type} title={title} date={date} slug={slug} category={category} tags={tags}
-        onTypeChange={setType} onTitleChange={setTitle} onDateChange={setDate}
-        onSlugChange={setSlug} onCategoryChange={setCategory} onTagsChange={setTags}
+        onTypeChange={setType}
+        onTitleChange={(v) => {
+          setTitle(v);
+          if (!slugManual) setSlug(generateSlug(v));
+        }}
+        onDateChange={setDate}
+        onSlugChange={(v) => { setSlug(v); setSlugManual(true); }}
+        onCategoryChange={setCategory} onTagsChange={setTags}
       />
 
       <TiptapEditor value={body} onChange={setBody} />

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
 import TiptapEditor from '@/components/admin/TiptapEditor';
+import { useToast } from '@/components/admin/Toast';
 import { createClient } from '@/lib/github-api';
 import {
   dataUrlToRawBase64,
@@ -45,6 +46,7 @@ function buildFrontMatter(meta: { title: string; date: string; tags: string[]; c
 function EditPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
   const type = (searchParams.get('type') || 'posts') as ContentType;
   const filename = searchParams.get('file') || '';
 
@@ -57,6 +59,21 @@ function EditPageContent() {
   const [sha, setSha] = useState('');
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
+  const isDirty = useRef(false);
+  const loadedBody = useRef('');
+
+  // Track unsaved changes
+  useEffect(() => {
+    isDirty.current = body !== loadedBody.current;
+  }, [title, body, tags, category]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty.current) { e.preventDefault(); }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   useEffect(() => {
     if (!filename) { setLoading(false); return; }
@@ -76,16 +93,17 @@ function EditPageContent() {
       setTags(Array.isArray(fm.tags) ? fm.tags as string[] : []);
       setSlug(filename.replace(/\.md$/, ''));
       setBody(articleBody);
+      loadedBody.current = articleBody;
     } catch (e) {
-      alert('加载失败: ' + (e instanceof Error ? e.message : '未知错误'));
+      toast('加载失败: ' + (e instanceof Error ? e.message : '未知错误'), 'error');
     }
     setLoading(false);
   }
 
   const publish = async () => {
-    if (!title) { alert('请输入标题'); return; }
+    if (!title) { toast('请输入标题', 'error'); return; }
     const client = createClient();
-    if (!client) { alert('请先配置 GitHub Token'); return; }
+    if (!client) { toast('请先配置 GitHub Token', 'error'); return; }
 
     setPublishing(true);
     try {
@@ -120,10 +138,11 @@ function EditPageContent() {
         await client.saveFile(filePath, content, sha, `Update ${filename}`);
       }
 
-      alert('已提交，约 2 分钟后生效');
+      isDirty.current = false;
+      toast('已保存，约 2 分钟后生效', 'success');
       router.push('/admin/');
     } catch (e) {
-      alert('发布失败: ' + (e instanceof Error ? e.message : '未知错误'));
+      toast('保存失败: ' + (e instanceof Error ? e.message : '未知错误'), 'error');
     }
     setPublishing(false);
   };
