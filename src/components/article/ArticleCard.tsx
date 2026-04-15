@@ -25,13 +25,36 @@ interface ArticleCardProps {
   article: ArticleMeta;
   showType?: boolean;
   matches?: readonly FuseResultMatch[];
+  matchKeys?: string[];
 }
 
-export default function ArticleCard({ article, showType = false, matches }: ArticleCardProps) {
+export default function ArticleCard({ article, showType = false, matches, matchKeys }: ArticleCardProps) {
   const href = `/${article.type}/${article.slug}/`;
-  const displayTitle = article.type === 'posts' ? article.title.replace(/^日志\s*[-–]\s*/, '') : article.title;
+  const rawTitle = article.title;
+  let displayTitle = rawTitle;
+  let titleOffset = 0;
+  if (article.type === 'posts') {
+    const prefix = rawTitle.match(/^日志\s*[-–]\s*/);
+    if (prefix) {
+      titleOffset = prefix[0].length;
+      displayTitle = rawTitle.slice(titleOffset);
+    }
+  }
   const titleMatch = matches?.find(m => m.key === 'title');
   const excerptMatch = matches?.find(m => m.key === 'excerpt');
+  const adjustedTitleIndices = titleMatch?.indices
+    ? titleMatch.indices
+      .map(([s, e]) => [s - titleOffset, e - titleOffset] as [number, number])
+      .filter(([s, e]) => e >= 0 && s < displayTitle.length)
+      .map(([s, e]) => [Math.max(0, s), Math.min(displayTitle.length - 1, e)] as [number, number])
+    : undefined;
+  const hitKeys = new Set(matchKeys || matches?.map(m => m.key) || []);
+  const hitLabels = [
+    hitKeys.has('title') ? '标题' : null,
+    hitKeys.has('tags') ? '标签' : null,
+    hitKeys.has('category') ? '分类' : null,
+    (hitKeys.has('excerpt') || hitKeys.has('content')) ? '内容' : null,
+  ].filter(Boolean) as string[];
 
   return (
     <Link
@@ -47,8 +70,20 @@ export default function ArticleCard({ article, showType = false, matches }: Arti
         )}
       </div>
       <div className="text-[15px] font-semibold text-[var(--text-primary)] mb-1 leading-snug hover:text-[var(--accent)]">
-        {titleMatch ? highlightText(displayTitle, titleMatch.indices) : displayTitle}
+        {adjustedTitleIndices?.length ? highlightText(displayTitle, adjustedTitleIndices) : displayTitle}
       </div>
+      {hitLabels.length > 0 && (
+        <div className="flex items-center gap-1 mb-1">
+          {hitLabels.map(label => (
+            <span
+              key={label}
+              className="text-[10px] text-[var(--text-dimmed)] border border-[var(--border-light)] rounded-md px-1.5 py-0.5"
+            >
+              命中{label}
+            </span>
+          ))}
+        </div>
+      )}
       {article.excerpt && (
         <div className="text-[13px] text-[var(--text-muted)] leading-relaxed line-clamp-2">
           {excerptMatch ? highlightText(article.excerpt, excerptMatch.indices) : article.excerpt}

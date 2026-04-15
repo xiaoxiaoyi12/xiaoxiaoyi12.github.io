@@ -5,8 +5,9 @@ import matter from 'gray-matter';
 const CONTENT_DIR = path.join(process.cwd(), 'content');
 const OUTPUT_PATH = path.join(process.cwd(), 'public', 'search-index.json');
 const TYPES = ['posts', 'notes', 'readings', 'thoughts'];
+const MAX_CONTENT = 8000;
 
-function excerptFromBody(body, maxLen = 200) {
+function plainFromBody(body) {
   return body
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/\*\*|__/g, '')
@@ -19,8 +20,11 @@ function excerptFromBody(body, maxLen = 200) {
     .replace(/^[-*+]\s+/gm, '')
     .replace(/\|[^\n]*\|/gm, '')
     .replace(/\n+/g, ' ')
-    .trim()
-    .slice(0, maxLen);
+    .trim();
+}
+
+function excerptFromPlain(plain, maxLen = 200) {
+  return plain.slice(0, maxLen);
 }
 
 const index = [];
@@ -33,6 +37,7 @@ for (const type of TYPES) {
   for (const filename of files) {
     const raw = fs.readFileSync(path.join(dir, filename), 'utf-8');
     const { data, content } = matter(raw);
+    const plain = plainFromBody(content);
 
     index.push({
       slug: filename.replace(/\.md$/, ''),
@@ -41,7 +46,8 @@ for (const type of TYPES) {
       date: data.date ? new Date(data.date).toISOString().slice(0, 10) : '',
       tags: Array.isArray(data.tags) ? data.tags : [],
       category: data.category || '',
-      excerpt: excerptFromBody(content),
+      excerpt: excerptFromPlain(plain),
+      content: plain.slice(0, MAX_CONTENT),
     });
   }
 }
