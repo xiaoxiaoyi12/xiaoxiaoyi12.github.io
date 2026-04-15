@@ -2,3 +2,5 @@
 .env
 .master-key
 node_modules/
+.next/
+out/

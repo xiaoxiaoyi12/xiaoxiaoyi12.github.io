@@ -1,6 +1,9 @@
 {
   "private": true,
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "encrypt": "node scripts/encrypt.js",
     "decrypt": "node scripts/decrypt.js",
     "change-password": "node scripts/change-password.js",
@@ -9,5 +12,29 @@
     "migrate": "node scripts/migrate.js",
     "admin": "node scripts/admin-server.js",
     "test:crypto": "node scripts/test-crypto-compat.js"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "gray-matter": "^4.0.3",
+    "next": "^16.2.3",
+    "postcss": "^8.5.9",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-markdown": "^10.1.0",
+    "rehype-pretty-code": "^0.14.3",
+    "rehype-stringify": "^10.0.1",
+    "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "shiki": "^4.0.2",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
   }
 }

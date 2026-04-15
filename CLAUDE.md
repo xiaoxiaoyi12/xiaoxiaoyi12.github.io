@@ -3,21 +3,43 @@
 这是一个 GitHub Pages 博客 + 90 天全栈学习计划仓库。
 
 - 博客地址：https://xiaoxiaoyi12.github.io
-- 主题：Jekyll + hacker theme
+- 技术栈：Next.js 15 + TypeScript + Tailwind CSS 4（静态导出 SSG）
 - 分支：master
+- 部署：GitHub Actions → GitHub Pages
 
 ## 目录结构
 
 ```
-_posts/          → 每日博客日志（格式：YYYY-MM-DD-daily-log.md）
-_notes/          → 学习笔记文章（格式：YYYY-MM-DD-<topic-slug>.md）
-_readings/       → 阅读笔记（格式：YYYY-MM-DD-<book-slug>.md）
-_thoughts/       → 生活感想（格式：YYYY-MM-DD-<topic-slug>.md）
-admin/           → 在线管理后台 SPA（index.html 单文件）
-scripts/         → 工具脚本
-  ├── encrypt.js → 加密标记了 protected: true 的文章
-  ├── decrypt.js → 解密文章（用于编辑）
-  └── admin-server.js → 本地管理服务（npm run admin）
+src/
+  app/             → Next.js App Router 页面
+    layout.tsx     → 根布局（Header + 主题切换）
+    page.tsx       → 首页（4 Tab + 搜索）
+    HomeClient.tsx → 首页客户端组件
+    posts/[slug]/  → 文章详情页
+    notes/[slug]/  → 笔记详情页
+    readings/[slug]/ → 阅读详情页
+    thoughts/[slug]/ → 感想详情页
+    admin/         → 管理后台（客户端渲染）
+      page.tsx     → 文章列表（筛选/搜索/删除）
+      new/         → 新建文章（Markdown 编辑器）
+      edit/        → 编辑文章（query params: ?type=&file=）
+      settings/    → GitHub Token 配置
+  components/
+    layout/        → Header, ThemeToggle
+    article/       → ArticleCard, ArticleContent, TagList
+    admin/         → AdminSidebar, FrontMatterForm, MarkdownEditor
+  lib/
+    types.ts       → ContentType, ArticleMeta, Article 类型定义
+    content.ts     → 构建时读取 MD 文件、解析 front matter
+    markdown.ts    → unified 管线（remark + rehype + 代码高亮）
+    github-api.ts  → GitHub API 封装（admin CRUD 用）
+  styles/
+    globals.css    → Tailwind 入口 + CSS 变量（dark/light 主题）
+content/
+  posts/           → 每日博客日志（格式：YYYY-MM-DD-daily-log.md）
+  notes/           → 学习笔记文章（格式：YYYY-MM-DD-<topic-slug>.md）
+  readings/        → 阅读笔记（格式：YYYY-MM-DD-<book-slug>.md）
+  thoughts/        → 生活感想（格式：YYYY-MM-DD-<topic-slug>.md）
 plan/            → 90 天学习计划（只读，不要修改除非用户要求）
   ├── README.md
   ├── phase1-foundation-backend.md   (Day 1-20)
