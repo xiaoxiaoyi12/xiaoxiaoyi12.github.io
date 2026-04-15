@@ -2,6 +2,7 @@ import Link from 'next/link';
 import TagList from './TagList';
 import ArticleSidebar from './ArticleSidebar';
 import ArticleNavigation from './ArticleNavigation';
+import { ReadingProgress, BackToTop, CopyCodeButtons } from './ReadingEnhance';
 import type { Article, ArticleNavigation as NavType } from '@/lib/types';
 
 interface Props {
@@ -16,6 +17,7 @@ export default function ArticleContent({ article, navigation }: Props) {
 
   return (
     <>
+      <ReadingProgress />
       <ArticleSidebar related={navigation.related} />
 
       <article>
@@ -40,6 +42,9 @@ export default function ArticleContent({ article, navigation }: Props) {
 
         <ArticleNavigation prev={navigation.prev} next={navigation.next} />
       </article>
+
+      <CopyCodeButtons />
+      <BackToTop />
     </>
   );
 }
