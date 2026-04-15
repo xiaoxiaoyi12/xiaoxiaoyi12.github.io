@@ -134,7 +134,15 @@ function EditPageContent() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-[var(--text-primary)]">编辑: {title || filename}</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/admin/')}
+            className="text-[var(--text-muted)] bg-transparent border-none cursor-pointer text-sm hover:text-[var(--accent)] transition-colors"
+          >
+            ← 返回
+          </button>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">编辑: {title || filename}</h1>
+        </div>
         <button
           onClick={publish}
           disabled={publishing}

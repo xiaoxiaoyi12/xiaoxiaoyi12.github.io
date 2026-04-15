@@ -58,32 +58,38 @@ export default function AdminListPage() {
     setError('');
 
     try {
-      const all: ArticleEntry[] = [];
-      for (const type of ALL_TYPES) {
-        try {
+      // Fetch all types in parallel
+      const typeResults = await Promise.allSettled(
+        ALL_TYPES.map(async type => {
           const files = await client.listFiles(`content/${type}`);
-          for (const f of files) {
-            if (!f.name.endsWith('.md')) continue;
-            try {
+          const mdFiles = files.filter(f => f.name.endsWith('.md'));
+
+          // Fetch all file contents in parallel within each type
+          const fileResults = await Promise.allSettled(
+            mdFiles.map(async f => {
               const file = await client.getFile(f.path);
               const fm = parseFrontMatter(file.content);
-              all.push({
-                name: f.name,
-                path: f.path,
-                sha: f.sha,
-                type,
+              return {
+                name: f.name, path: f.path, sha: f.sha, type,
                 title: (fm.title as string) || f.name,
                 date: (fm.date as string) || '',
                 tags: Array.isArray(fm.tags) ? fm.tags as string[] : [],
-              });
-            } catch {
-              all.push({ name: f.name, path: f.path, sha: f.sha, type, title: f.name, date: '', tags: [] });
-            }
-          }
-        } catch {
-          // Directory might not exist
-        }
-      }
+              } as ArticleEntry;
+            })
+          );
+
+          return fileResults.map((r, i) =>
+            r.status === 'fulfilled'
+              ? r.value
+              : { name: mdFiles[i].name, path: mdFiles[i].path, sha: mdFiles[i].sha, type, title: mdFiles[i].name, date: '', tags: [] } as ArticleEntry
+          );
+        })
+      );
+
+      const all = typeResults
+        .filter((r): r is PromiseFulfilledResult<ArticleEntry[]> => r.status === 'fulfilled')
+        .flatMap(r => r.value);
+
       all.sort((a, b) => b.date.localeCompare(a.date));
       setArticles(all);
     } catch (e) {
