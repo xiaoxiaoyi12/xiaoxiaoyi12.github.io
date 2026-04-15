@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
-import MarkdownEditor from '@/components/admin/MarkdownEditor';
+import TiptapEditor from '@/components/admin/TiptapEditor';
 import { createClient } from '@/lib/github-api';
 import type { ContentType } from '@/lib/types';
 
@@ -68,7 +68,7 @@ export default function NewArticlePage() {
         onSlugChange={setSlug} onCategoryChange={setCategory} onTagsChange={setTags}
       />
 
-      <MarkdownEditor value={body} onChange={setBody} />
+      <TiptapEditor value={body} onChange={setBody} />
     </div>
   );
 }

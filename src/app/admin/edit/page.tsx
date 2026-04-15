@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
-import MarkdownEditor from '@/components/admin/MarkdownEditor';
+import TiptapEditor from '@/components/admin/TiptapEditor';
 import { createClient } from '@/lib/github-api';
 import type { ContentType } from '@/lib/types';
 
@@ -118,7 +118,7 @@ function EditPageContent() {
         disabled
       />
 
-      <MarkdownEditor value={body} onChange={setBody} />
+      <TiptapEditor value={body} onChange={setBody} />
     </div>
   );
 }
