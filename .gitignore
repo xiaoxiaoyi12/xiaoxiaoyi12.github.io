@@ -5,4 +5,5 @@ node_modules/
 .next/
 out/
 public/search-index.json
-.superpowers/
+public/feed.xml
+public/sitemap.xml

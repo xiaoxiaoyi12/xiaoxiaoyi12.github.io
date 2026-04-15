@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/generate-search-index.mjs && next build",
+    "build": "node scripts/generate-search-index.mjs && node scripts/generate-rss.mjs && node scripts/generate-sitemap.mjs && next build",
     "start": "next start",
     "encrypt": "node scripts/encrypt.js",
     "decrypt": "node scripts/decrypt.js",
