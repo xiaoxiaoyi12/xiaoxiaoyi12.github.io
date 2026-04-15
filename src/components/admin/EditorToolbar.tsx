@@ -162,7 +162,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
                 const dataUrl = await compressImage(file);
                 editor.chain().focus().setImage({ src: dataUrl, alt: file.name }).run();
               } catch (e) {
-                alert(e instanceof ImageUploadError ? e.message : '图片处理失败');
+                console.error(e instanceof ImageUploadError ? e.message : '图片处理失败');
               }
             }
           };

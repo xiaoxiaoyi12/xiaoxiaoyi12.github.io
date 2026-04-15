@@ -19,7 +19,6 @@ interface Props {
   notesGrouped: Record<string, ArticleMeta[]>;
   readingsGrouped: Record<string, ArticleMeta[]>;
   thoughts: ArticleMeta[];
-  allArticles: ArticleMeta[];
 }
 
 export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoughts }: Props) {
@@ -101,7 +100,10 @@ export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoug
       {!hasQuery && (
         <>
           {activeTab === 'posts' && (
-            <div>{posts.map(a => <ArticleCard key={a.slug} article={a} />)}</div>
+            <div>
+              {posts.length === 0 && <p className="text-[var(--text-dimmed)] italic py-5">暂无文章</p>}
+              {posts.map(a => <ArticleCard key={a.slug} article={a} />)}
+            </div>
           )}
 
           {activeTab === 'notes' && (

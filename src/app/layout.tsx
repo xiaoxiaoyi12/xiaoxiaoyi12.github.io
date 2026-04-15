@@ -1,6 +1,12 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 import '@/styles/globals.css';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: '依人相的月光集市',
@@ -34,11 +40,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
-            var saved = localStorage.getItem('theme') || 'system';
-            var theme = saved === 'system'
-              ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-              : saved;
-            document.documentElement.setAttribute('data-theme', theme);
+            try {
+              var saved = localStorage.getItem('theme') || 'system';
+              var theme = saved === 'system'
+                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                : saved;
+              document.documentElement.setAttribute('data-theme', theme);
+            } catch(e) {
+              document.documentElement.setAttribute('data-theme', 'light');
+            }
           })();
         `}} />
       </head>
@@ -47,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="max-w-[980px] mx-auto px-4">
           {children}
         </main>
+        <Footer />
       </body>
     </html>
   );

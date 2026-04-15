@@ -19,7 +19,6 @@ export default function Home() {
         notesGrouped={notesGrouped}
         readingsGrouped={readingsGrouped}
         thoughts={thoughts}
-        allArticles={[...posts, ...notes, ...readings, ...thoughts]}
       />
     </Suspense>
   );
