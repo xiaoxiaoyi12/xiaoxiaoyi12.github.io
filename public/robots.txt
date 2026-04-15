@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://xiaoxiaoyi12.github.io/sitemap.xml
