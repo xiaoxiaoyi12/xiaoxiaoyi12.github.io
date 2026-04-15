@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
 import TiptapEditor from '@/components/admin/TiptapEditor';
 import { useToast } from '@/components/admin/Toast';
+import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
 import { createClient } from '@/lib/github-api';
+import { getDraftKey, saveDraft, loadDraft, clearDraft } from '@/lib/draft';
 import {
   dataUrlToRawBase64,
   generateImageFilename,
@@ -46,7 +48,14 @@ export default function NewArticlePage() {
   const [tags, setTags] = useState<string[]>([]);
   const [body, setBody] = useState('');
   const [publishing, setPublishing] = useState(false);
+  const [draftChecked, setDraftChecked] = useState(false);
   const isDirty = useRef(false);
+  const stateRef = useRef({ title, date, slug, category, tags, body, type });
+
+  // Keep ref in sync for interval access
+  useEffect(() => {
+    stateRef.current = { title, date, slug, category, tags, body, type };
+  }, [title, date, slug, category, tags, body, type]);
 
   // Track unsaved changes
   useEffect(() => {
@@ -60,6 +69,43 @@ export default function NewArticlePage() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
+
+  // Draft restore on load
+  useEffect(() => {
+    const key = getDraftKey('new');
+    const draft = loadDraft(key);
+    if (draft && draft.title) {
+      if (confirm(`发现未保存的草稿「${draft.title}」，是否恢复？`)) {
+        setTitle(draft.title);
+        setBody(draft.body);
+        setDate(draft.date);
+        setTags(draft.tags);
+        setCategory(draft.category);
+        setSlug(draft.slug);
+        setType(draft.type as ContentType);
+        setSlugManual(true);
+      } else {
+        clearDraft(key);
+      }
+    }
+    setDraftChecked(true);
+  }, []);
+
+  // Auto-save draft every 30 seconds
+  useEffect(() => {
+    if (!draftChecked) return;
+    const interval = setInterval(() => {
+      const s = stateRef.current;
+      if (s.title || s.body) {
+        saveDraft(getDraftKey('new'), {
+          title: s.title, body: s.body, date: s.date,
+          tags: s.tags, category: s.category, slug: s.slug,
+          type: s.type, savedAt: Date.now(),
+        });
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [draftChecked]);
 
   const publish = async () => {
     if (!title) { toast('请输入标题', 'error'); return; }
@@ -102,6 +148,7 @@ export default function NewArticlePage() {
       }
 
       isDirty.current = false;
+      clearDraft(getDraftKey('new'));
       toast('已提交，约 2 分钟后生效', 'success');
       router.push('/admin/');
     } catch (e) {
@@ -109,6 +156,11 @@ export default function NewArticlePage() {
     }
     setPublishing(false);
   };
+
+  useAdminShortcuts({
+    onSave: () => publish(),
+    onBack: () => router.push('/admin/'),
+  });
 
   return (
     <div>

@@ -6,7 +6,9 @@ import { Suspense } from 'react';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
 import TiptapEditor from '@/components/admin/TiptapEditor';
 import { useToast } from '@/components/admin/Toast';
+import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
 import { createClient } from '@/lib/github-api';
+import { getDraftKey, saveDraft, loadDraft, clearDraft } from '@/lib/draft';
 import {
   dataUrlToRawBase64,
   generateImageFilename,
@@ -59,8 +61,14 @@ function EditPageContent() {
   const [sha, setSha] = useState('');
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
+  const [draftChecked, setDraftChecked] = useState(false);
   const isDirty = useRef(false);
   const loadedBody = useRef('');
+  const stateRef = useRef({ title, date, slug, category, tags, body, type });
+
+  useEffect(() => {
+    stateRef.current = { title, date, slug, category, tags, body, type };
+  }, [title, date, slug, category, tags, body, type]);
 
   // Track unsaved changes
   useEffect(() => {
@@ -98,7 +106,39 @@ function EditPageContent() {
       toast('加载失败: ' + (e instanceof Error ? e.message : '未知错误'), 'error');
     }
     setLoading(false);
+
+    // Check for draft after loading article
+    const key = getDraftKey('edit', filename);
+    const draft = loadDraft(key);
+    if (draft && draft.title) {
+      if (confirm(`发现未保存的草稿「${draft.title}」，是否恢复？`)) {
+        setTitle(draft.title);
+        setBody(draft.body);
+        setDate(draft.date);
+        setTags(draft.tags);
+        setCategory(draft.category);
+      } else {
+        clearDraft(key);
+      }
+    }
+    setDraftChecked(true);
   }
+
+  // Auto-save draft every 30 seconds
+  useEffect(() => {
+    if (!draftChecked || !filename) return;
+    const interval = setInterval(() => {
+      const s = stateRef.current;
+      if (s.title || s.body) {
+        saveDraft(getDraftKey('edit', filename), {
+          title: s.title, body: s.body, date: s.date,
+          tags: s.tags, category: s.category, slug: s.slug,
+          type: s.type, savedAt: Date.now(),
+        });
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [draftChecked, filename]);
 
   const publish = async () => {
     if (!title) { toast('请输入标题', 'error'); return; }
@@ -139,6 +179,7 @@ function EditPageContent() {
       }
 
       isDirty.current = false;
+      clearDraft(getDraftKey('edit', filename));
       toast('已保存，约 2 分钟后生效', 'success');
       router.push('/admin/');
     } catch (e) {
@@ -146,6 +187,11 @@ function EditPageContent() {
     }
     setPublishing(false);
   };
+
+  useAdminShortcuts({
+    onSave: () => publish(),
+    onBack: () => router.push('/admin/'),
+  });
 
   if (!filename) return <div className="text-[var(--text-muted)] py-10">未指定文件</div>;
   if (loading) return <div className="text-[var(--text-muted)] py-10">加载中...</div>;

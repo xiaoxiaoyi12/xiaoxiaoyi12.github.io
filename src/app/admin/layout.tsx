@@ -2,6 +2,7 @@
 
 import AdminSidebar, { AdminMobileNav } from '@/components/admin/AdminSidebar';
 import { ToastProvider } from '@/components/admin/Toast';
+import { ShortcutsHelp } from '@/components/admin/KeyboardShortcuts';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
       </div>
+      <ShortcutsHelp />
     </ToastProvider>
   );
 }

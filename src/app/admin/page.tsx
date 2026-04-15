@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient, getGitHubSettings } from '@/lib/github-api';
 import { TYPE_LABELS, ALL_TYPES } from '@/lib/types';
 import { useToast } from '@/components/admin/Toast';
+import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
 import type { ContentType } from '@/lib/types';
 
 interface ArticleEntry {
@@ -43,6 +44,11 @@ export default function AdminListPage() {
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState<ContentType | 'all'>('all');
   const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useAdminShortcuts({
+    onSearch: () => searchRef.current?.focus(),
+  });
 
   useEffect(() => {
     loadArticles();
@@ -99,6 +105,31 @@ export default function AdminListPage() {
     }
     setLoading(false);
   }
+
+  const stats = useMemo(() => {
+    const total = articles.length;
+    const byType: Record<string, number> = {};
+    for (const t of ALL_TYPES) byType[t] = 0;
+    const now = Date.now();
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const recentByDay: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now - i * 24 * 60 * 60 * 1000);
+      recentByDay[d.toISOString().slice(5, 10)] = 0;
+    }
+    for (const a of articles) {
+      byType[a.type] = (byType[a.type] || 0) + 1;
+      if (a.date) {
+        const ts = new Date(a.date).getTime();
+        if (ts >= sevenDaysAgo) {
+          const key = a.date.slice(5, 10);
+          if (key in recentByDay) recentByDay[key]++;
+        }
+      }
+    }
+    const maxDay = Math.max(...Object.values(recentByDay), 1);
+    return { total, byType, recentByDay, maxDay };
+  }, [articles]);
 
   const filtered = useMemo(() => {
     let list = articles;
@@ -167,6 +198,40 @@ export default function AdminListPage() {
         </button>
       </div>
 
+      {/* Dashboard stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-[var(--accent)]">{stats.total}</div>
+          <div className="text-xs text-[var(--text-muted)] mt-1">总文章</div>
+        </div>
+        {ALL_TYPES.map(t => (
+          <div key={t} className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.byType[t] || 0}</div>
+            <div className="text-xs text-[var(--text-muted)] mt-1">{TYPE_LABELS[t]}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent 7-day activity */}
+      <div className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg p-4 mb-5">
+        <div className="text-xs text-[var(--text-muted)] mb-2">近 7 天发布</div>
+        <div className="flex items-end gap-1 h-10">
+          {Object.entries(stats.recentByDay).map(([day, count]) => (
+            <div key={day} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className="w-full rounded-sm transition-all"
+                style={{
+                  height: `${Math.max((count / stats.maxDay) * 32, 2)}px`,
+                  backgroundColor: count > 0 ? 'var(--accent)' : 'var(--border-light)',
+                }}
+                title={`${day}: ${count} 篇`}
+              />
+              <span className="text-[10px] text-[var(--text-dimmed)]">{day}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 mb-4">
         <select
           value={filterType}
@@ -177,10 +242,11 @@ export default function AdminListPage() {
           {ALL_TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
         </select>
         <input
+          ref={searchRef}
           type="text"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="搜索..."
+          placeholder="搜索... (⌘K)"
           className="bg-[var(--bg-card)] border border-[var(--border-light)] text-[var(--text-primary)] px-3 py-1.5 text-sm rounded-lg flex-1 max-w-xs focus:outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--text-dimmed)]"
         />
         <button onClick={loadArticles} className="text-[var(--text-muted)] text-sm bg-transparent border-none cursor-pointer hover:text-[var(--text-primary)]">
