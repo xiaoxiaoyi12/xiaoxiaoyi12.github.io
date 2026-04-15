@@ -2,9 +2,36 @@ import Link from 'next/link';
 import TagList from './TagList';
 import type { ArticleMeta } from '@/lib/types';
 import { TYPE_LABELS } from '@/lib/types';
+import type { FuseResultMatch } from 'fuse.js';
 
-export default function ArticleCard({ article, showType = false }: { article: ArticleMeta; showType?: boolean }) {
+function highlightText(text: string, indices: readonly [number, number][] | undefined): React.ReactNode {
+  if (!indices?.length) return text;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  for (const [start, end] of indices) {
+    if (start > lastIndex) parts.push(text.slice(lastIndex, start));
+    parts.push(
+      <mark key={start} className="bg-[var(--accent-bg)] text-[var(--accent)] rounded-sm px-0.5">
+        {text.slice(start, end + 1)}
+      </mark>
+    );
+    lastIndex = end + 1;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
+}
+
+interface ArticleCardProps {
+  article: ArticleMeta;
+  showType?: boolean;
+  matches?: readonly FuseResultMatch[];
+}
+
+export default function ArticleCard({ article, showType = false, matches }: ArticleCardProps) {
   const href = `/${article.type}/${article.slug}/`;
+  const displayTitle = article.type === 'posts' ? article.title.replace(/^日志\s*[-–]\s*/, '') : article.title;
+  const titleMatch = matches?.find(m => m.key === 'title');
+  const excerptMatch = matches?.find(m => m.key === 'excerpt');
 
   return (
     <Link
@@ -20,11 +47,11 @@ export default function ArticleCard({ article, showType = false }: { article: Ar
         )}
       </div>
       <div className="text-[15px] font-semibold text-[var(--text-primary)] mb-1 leading-snug hover:text-[var(--accent)]">
-        {article.type === 'posts' ? article.title.replace(/^日志\s*[-–]\s*/, '') : article.title}
+        {titleMatch ? highlightText(displayTitle, titleMatch.indices) : displayTitle}
       </div>
       {article.excerpt && (
         <div className="text-[13px] text-[var(--text-muted)] leading-relaxed line-clamp-2">
-          {article.excerpt}
+          {excerptMatch ? highlightText(article.excerpt, excerptMatch.indices) : article.excerpt}
         </div>
       )}
       {article.tags.length > 0 && <TagList tags={article.tags} />}

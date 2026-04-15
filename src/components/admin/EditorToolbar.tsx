@@ -149,6 +149,30 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
         Link
       </ToolbarButton>
       <ToolbarButton
+        onClick={() => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.multiple = true;
+          input.onchange = async () => {
+            if (!input.files?.length) return;
+            const { compressImage, ImageUploadError } = await import('@/lib/image-upload');
+            for (const file of Array.from(input.files)) {
+              try {
+                const dataUrl = await compressImage(file);
+                editor.chain().focus().setImage({ src: dataUrl, alt: file.name }).run();
+              } catch (e) {
+                alert(e instanceof ImageUploadError ? e.message : '图片处理失败');
+              }
+            }
+          };
+          input.click();
+        }}
+        title="Insert Image"
+      >
+        Img
+      </ToolbarButton>
+      <ToolbarButton
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
         title="Horizontal Rule"
       >

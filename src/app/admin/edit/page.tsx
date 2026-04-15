@@ -6,6 +6,12 @@ import { Suspense } from 'react';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
 import TiptapEditor from '@/components/admin/TiptapEditor';
 import { createClient } from '@/lib/github-api';
+import {
+  dataUrlToRawBase64,
+  generateImageFilename,
+  getImageStoragePath,
+  getImagePublicPath,
+} from '@/lib/image-upload';
 import type { ContentType } from '@/lib/types';
 
 function parseFrontMatter(content: string) {
@@ -83,10 +89,37 @@ function EditPageContent() {
 
     setPublishing(true);
     try {
-      const path = `content/${type}/${filename}`;
+      const filePath = `content/${type}/${filename}`;
       const fm = buildFrontMatter({ title, date, tags, category: (type === 'notes' || type === 'readings') ? category : undefined });
-      const content = `${fm}\n\n${body}`;
-      await client.saveFile(path, content, sha, `Update ${filename}`);
+
+      // Collect new images (data URLs) from markdown body
+      let finalBody = body;
+      const imageFiles: { path: string; content: string; encoding: 'utf-8' | 'base64' }[] = [];
+      const dataUrlPattern = /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g;
+      let match;
+      while ((match = dataUrlPattern.exec(body)) !== null) {
+        const [fullMatch, alt, dataUrl] = match;
+        const ext = dataUrl.match(/^data:image\/(\w+)/)?.[1] || 'png';
+        const imgFilename = generateImageFilename((alt || 'image') + '.' + ext);
+        const storagePath = getImageStoragePath(type, imgFilename);
+        const publicPath = getImagePublicPath(type, imgFilename);
+        imageFiles.push({
+          path: storagePath,
+          content: dataUrlToRawBase64(dataUrl),
+          encoding: 'base64',
+        });
+        finalBody = finalBody.replace(fullMatch, `![${alt}](${publicPath})`);
+      }
+
+      const content = `${fm}\n\n${finalBody}`;
+
+      if (imageFiles.length > 0) {
+        imageFiles.push({ path: filePath, content, encoding: 'utf-8' });
+        await client.commitMultipleFiles(imageFiles, `Update ${filename} with ${imageFiles.length - 1} images`);
+      } else {
+        await client.saveFile(filePath, content, sha, `Update ${filename}`);
+      }
+
       alert('已提交，约 2 分钟后生效');
       router.push('/admin/');
     } catch (e) {

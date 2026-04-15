@@ -75,6 +75,62 @@ export class GitHubClient {
       body: JSON.stringify({ message, sha, branch: this.branch }),
     });
   }
+
+  async commitMultipleFiles(
+    files: { path: string; content: string; encoding: 'utf-8' | 'base64' }[],
+    message: string
+  ): Promise<void> {
+    // 1. Get latest commit SHA from branch ref
+    const ref = await this.request(`/git/ref/heads/${this.branch}`);
+    const latestCommitSha = ref.object.sha;
+
+    // 2. Get base tree SHA
+    const latestCommit = await this.request(`/git/commits/${latestCommitSha}`);
+    const baseTreeSha = latestCommit.tree.sha;
+
+    // 3. Create blobs for each file
+    const treeItems: { path: string; mode: string; type: string; sha: string }[] = [];
+    for (const file of files) {
+      const blob = await this.request('/git/blobs', {
+        method: 'POST',
+        body: JSON.stringify({
+          content: file.content,
+          encoding: file.encoding,
+        }),
+      });
+      treeItems.push({
+        path: file.path,
+        mode: '100644',
+        type: 'blob',
+        sha: blob.sha,
+      });
+    }
+
+    // 4. Create new tree
+    const newTree = await this.request('/git/trees', {
+      method: 'POST',
+      body: JSON.stringify({
+        base_tree: baseTreeSha,
+        tree: treeItems,
+      }),
+    });
+
+    // 5. Create commit
+    const newCommit = await this.request('/git/commits', {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        tree: newTree.sha,
+        parents: [latestCommitSha],
+      }),
+    });
+
+    // 6. Update branch ref to point to new commit
+    await this.request(`/git/refs/heads/${this.branch}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sha: newCommit.sha }),
+    });
+  }
 }
 
 export function getGitHubSettings() {

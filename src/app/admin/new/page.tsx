@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
 import TiptapEditor from '@/components/admin/TiptapEditor';
 import { createClient } from '@/lib/github-api';
+import {
+  dataUrlToRawBase64,
+  generateImageFilename,
+  getImageStoragePath,
+  getImagePublicPath,
+} from '@/lib/image-upload';
 import type { ContentType } from '@/lib/types';
 
 function buildFrontMatter(meta: { title: string; date: string; tags: string[]; category?: string }) {
@@ -36,11 +42,38 @@ export default function NewArticlePage() {
 
     setPublishing(true);
     try {
-      const filename = `${date}-${slug}.md`;
-      const path = `content/${type}/${filename}`;
       const fm = buildFrontMatter({ title, date, tags, category: (type === 'notes' || type === 'readings') ? category : undefined });
-      const content = `${fm}\n\n${body}`;
-      await client.saveFile(path, content, null, `Add ${filename}`);
+
+      // Collect new images (data URLs) from markdown body
+      let finalBody = body;
+      const imageFiles: { path: string; content: string; encoding: 'utf-8' | 'base64' }[] = [];
+      const dataUrlPattern = /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g;
+      let match;
+      while ((match = dataUrlPattern.exec(body)) !== null) {
+        const [fullMatch, alt, dataUrl] = match;
+        const ext = dataUrl.match(/^data:image\/(\w+)/)?.[1] || 'png';
+        const imgFilename = generateImageFilename((alt || 'image') + '.' + ext);
+        const storagePath = getImageStoragePath(type, imgFilename);
+        const publicPath = getImagePublicPath(type, imgFilename);
+        imageFiles.push({
+          path: storagePath,
+          content: dataUrlToRawBase64(dataUrl),
+          encoding: 'base64',
+        });
+        finalBody = finalBody.replace(fullMatch, `![${alt}](${publicPath})`);
+      }
+
+      const articleFilename = `${date}-${slug}.md`;
+      const articlePath = `content/${type}/${articleFilename}`;
+      const content = `${fm}\n\n${finalBody}`;
+
+      if (imageFiles.length > 0) {
+        imageFiles.push({ path: articlePath, content, encoding: 'utf-8' });
+        await client.commitMultipleFiles(imageFiles, `Add ${articleFilename} with ${imageFiles.length - 1} images`);
+      } else {
+        await client.saveFile(articlePath, content, null, `Add ${articleFilename}`);
+      }
+
       alert('已提交，约 2 分钟后生效');
       router.push('/admin/');
     } catch (e) {

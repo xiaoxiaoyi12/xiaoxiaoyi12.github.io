@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import ArticleCard from '@/components/article/ArticleCard';
+import { search as fuseSearch, preloadSearchIndex } from '@/lib/search';
+import type { SearchResult } from '@/lib/search';
 import type { ArticleMeta, ContentType } from '@/lib/types';
 
 const TABS: { key: ContentType; label: string }[] = [
@@ -19,18 +21,28 @@ interface Props {
   allArticles: ArticleMeta[];
 }
 
-export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoughts, allArticles }: Props) {
+export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoughts }: Props) {
   const [activeTab, setActiveTab] = useState<ContentType>('posts');
   const [query, setQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  const searchResults = useMemo(() => {
-    if (!query.trim()) return null;
-    const q = query.toLowerCase();
-    return allArticles.filter(a =>
-      a.title.toLowerCase().includes(q) ||
-      a.tags.some(t => t.toLowerCase().includes(q))
-    );
-  }, [query, allArticles]);
+  useEffect(() => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    const timer = setTimeout(() => {
+      fuseSearch(query.trim()).then(results => {
+        setSearchResults(results);
+        setSearching(false);
+      }).catch(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const hasQuery = query.trim().length > 0;
 
   return (
     <section>
@@ -41,7 +53,7 @@ export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoug
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setQuery(''); }}
               className={`bg-transparent border-none border-b-2 px-3.5 py-1.5 text-sm font-semibold cursor-pointer transition-all whitespace-nowrap ${
-                activeTab === tab.key && !query
+                activeTab === tab.key && !hasQuery
                   ? 'text-[var(--accent)] border-b-[var(--accent)]'
                   : 'text-[var(--text-muted)] border-b-transparent hover:text-[var(--text-primary)]'
               }`}
@@ -55,6 +67,7 @@ export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoug
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
+            onFocus={() => preloadSearchIndex()}
             placeholder="搜索..."
             className="bg-[var(--bg-card)] border border-[var(--border-light)] text-[var(--text-primary)] px-3 py-1.5 text-[13px] rounded-lg w-[140px] focus:w-[200px] focus:outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dimmed)]"
           />
@@ -62,18 +75,27 @@ export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoug
       </nav>
 
       {/* Search results */}
-      {searchResults !== null && (
+      {hasQuery && (
         <div>
-          {searchResults.length === 0 ? (
+          {searching && searchResults.length === 0 ? (
+            <p className="text-[var(--text-dimmed)] italic py-5">搜索中...</p>
+          ) : searchResults.length === 0 ? (
             <p className="text-[var(--text-dimmed)] italic py-5">未找到匹配内容</p>
           ) : (
-            searchResults.map(a => <ArticleCard key={`${a.type}/${a.slug}`} article={a} showType />)
+            searchResults.map(r => (
+              <ArticleCard
+                key={`${r.type}/${r.slug}`}
+                article={r as unknown as ArticleMeta}
+                showType
+                matches={r.matches}
+              />
+            ))
           )}
         </div>
       )}
 
       {/* Tab content */}
-      {searchResults === null && (
+      {!hasQuery && (
         <>
           {activeTab === 'posts' && (
             <div>{posts.map(a => <ArticleCard key={a.slug} article={a} />)}</div>
