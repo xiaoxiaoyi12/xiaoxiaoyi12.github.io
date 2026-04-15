@@ -13,7 +13,7 @@ export default function Header() {
             只在深夜营业，售卖代码与随想
           </span>
         </Link>
-        <nav className="flex items-center flex-shrink-0">
+        <nav aria-label="主导航" className="flex items-center flex-shrink-0">
           <Link href="/bookmark/" className="text-[var(--text-muted)] text-sm font-semibold px-2 sm:px-4 py-1.5 no-underline hover:text-[var(--text-primary)] transition-colors">
             书签
           </Link>

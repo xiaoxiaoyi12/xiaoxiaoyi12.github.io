@@ -55,8 +55,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
       </head>
       <body>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[var(--accent)] focus:text-white focus:rounded-lg focus:text-sm">
+          跳转到主要内容
+        </a>
         <Header />
-        <main className="max-w-[980px] mx-auto px-4">
+        <main id="main-content" className="max-w-[980px] mx-auto px-4">
           {children}
         </main>
         <Footer />

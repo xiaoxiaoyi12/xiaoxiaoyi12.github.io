@@ -43,7 +43,7 @@ export default function ThemeToggle() {
     document.documentElement.setAttribute('data-theme', resolveTheme(next));
   };
 
-  if (!mounted) return <button className="text-[var(--text-muted)] text-[15px] p-1.5 cursor-pointer bg-transparent border-none hover:text-[var(--text-primary)] transition-colors">🌙</button>;
+  if (!mounted) return <button aria-label="切换主题" className="text-[var(--text-muted)] text-[15px] p-1.5 cursor-pointer bg-transparent border-none hover:text-[var(--text-primary)] transition-colors">🌙</button>;
 
   return (
     <button

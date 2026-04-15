@@ -48,7 +48,7 @@ export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoug
 
   return (
     <section>
-      <nav className="flex items-center py-5 gap-1">
+      <nav aria-label="内容分类" className="flex items-center py-5 gap-1">
         <div className="flex gap-0 overflow-x-auto flex-shrink min-w-0" style={{ scrollbarWidth: 'none' }}>
           {TABS.map(tab => (
             <button

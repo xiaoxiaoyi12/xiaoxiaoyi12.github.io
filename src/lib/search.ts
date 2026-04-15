@@ -29,8 +29,9 @@ async function ensureLoaded(): Promise<Fuse<SearchItem>> {
       .then((items: SearchItem[]) => {
         fuseInstance = new Fuse(items, {
           keys: [
-            { name: 'title', weight: 0.5 },
-            { name: 'tags', weight: 0.3 },
+            { name: 'title', weight: 0.45 },
+            { name: 'tags', weight: 0.25 },
+            { name: 'category', weight: 0.1 },
             { name: 'excerpt', weight: 0.2 },
           ],
           threshold: 0.4,

@@ -5,8 +5,9 @@ import type { ArticleMeta } from '@/lib/types';
 export default function ArticleSidebar({ related }: { related: ArticleMeta[] }) {
   return (
     <aside
-      className="fixed top-24 w-[200px] hidden min-[1280px]:block"
-      style={{ left: 'calc(50% + 490px + 40px)' }}
+      aria-label="目录与推荐"
+      className="fixed top-24 w-[200px] hidden min-[1280px]:block max-h-[calc(100vh-120px)] overflow-y-auto"
+      style={{ left: 'calc(50% + 490px + 40px)', scrollbarWidth: 'thin' }}
     >
       <TableOfContents />
 

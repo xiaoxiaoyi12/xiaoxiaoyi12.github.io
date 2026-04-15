@@ -10,7 +10,7 @@ export default function ArticleNavigation({ prev, next }: Props) {
   if (!prev && !next) return null;
 
   return (
-    <nav className="mt-10 pt-6 border-t border-[var(--border)] flex justify-between gap-4 pb-10">
+    <nav aria-label="文章导航" className="mt-10 pt-6 border-t border-[var(--border)] flex justify-between gap-4 pb-10">
       {prev ? (
         <Link
           href={`/${prev.type}/${prev.slug}/`}
