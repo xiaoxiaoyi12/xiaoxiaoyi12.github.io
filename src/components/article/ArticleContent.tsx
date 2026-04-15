@@ -10,7 +10,6 @@ interface Props {
 }
 
 export default function ArticleContent({ article, navigation }: Props) {
-  const editUrl = `/admin/edit/?type=${article.type}&file=${article.filename}`;
   const displayTitle = article.type === 'posts'
     ? article.title.replace(/^日志\s*[-–]\s*/, '')
     : article.title;
@@ -38,21 +37,6 @@ export default function ArticleContent({ article, navigation }: Props) {
             <TagList tags={article.tags} max={99} />
           </div>
         )}
-
-        <div className="mt-4 flex gap-3">
-          <Link
-            href={editUrl}
-            className="text-[13px] text-[var(--text-muted)] no-underline hover:text-[var(--accent)] transition-colors"
-          >
-            编辑
-          </Link>
-          <Link
-            href="/admin/"
-            className="text-[13px] text-[var(--text-muted)] no-underline hover:text-[var(--accent)] transition-colors"
-          >
-            删除
-          </Link>
-        </div>
 
         <ArticleNavigation prev={navigation.prev} next={navigation.next} />
       </article>

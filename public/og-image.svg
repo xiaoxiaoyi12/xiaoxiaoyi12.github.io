@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1a1a2e"/>
+  <circle cx="900" cy="200" r="120" fill="#e2e8f0" opacity="0.15"/>
+  <circle cx="920" cy="180" r="100" fill="#1a1a2e"/>
+  <text x="120" y="300" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="bold" fill="#e2e8f0">
+    依人相的月光集市
+  </text>
+  <text x="120" y="370" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#94a3b8">
+    只在深夜营业，售卖代码与随想
+  </text>
+  <line x1="120" y1="420" x2="300" y2="420" stroke="#6366f1" stroke-width="3" opacity="0.6"/>
+</svg>

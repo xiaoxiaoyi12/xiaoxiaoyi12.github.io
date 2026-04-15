@@ -21,11 +21,13 @@ export const metadata: Metadata = {
     siteName: '依人相的月光集市',
     locale: 'zh_CN',
     type: 'website',
+    images: [{ url: 'https://xiaoxiaoyi12.github.io/og-image.svg', width: 1200, height: 630, alt: '依人相的月光集市' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: '依人相的月光集市',
     description: '只在深夜营业，售卖代码与随想',
+    images: ['https://xiaoxiaoyi12.github.io/og-image.svg'],
   },
   alternates: {
     types: {
