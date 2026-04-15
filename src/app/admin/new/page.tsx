@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import FrontMatterForm from '@/components/admin/FrontMatterForm';
 import TiptapEditor from '@/components/admin/TiptapEditor';
 import { useToast } from '@/components/admin/Toast';
 import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
 import { createClient } from '@/lib/github-api';
+import { buildFrontMatter } from '@/lib/frontmatter';
 import { getDraftKey, saveDraft, loadDraft, clearDraft } from '@/lib/draft';
 import {
   dataUrlToRawBase64,
@@ -16,24 +17,6 @@ import {
 } from '@/lib/image-upload';
 import type { ContentType } from '@/lib/types';
 
-function escapeYamlString(input: string): string {
-  return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function formatTags(tags: string[]): string {
-  return tags.map(t => `"${escapeYamlString(t)}"`).join(', ');
-}
-
-function buildFrontMatter(meta: { title: string; date: string; tags: string[]; category?: string }) {
-  const lines = ['---'];
-  lines.push(`title: "${escapeYamlString(meta.title)}"`);
-  lines.push(`date: ${meta.date}`);
-  if (meta.category) lines.push(`category: "${escapeYamlString(meta.category)}"`);
-  lines.push(`tags: [${formatTags(meta.tags)}]`);
-  lines.push('---');
-  return lines.join('\n');
-}
-
 function generateSlug(title: string): string {
   // Extract English words and numbers, ignore Chinese
   const english = title.replace(/[^\w\s-]/g, '').trim();
@@ -42,6 +25,16 @@ function generateSlug(title: string): string {
   }
   // All Chinese: use a short random slug
   return 'post-' + Date.now().toString(36);
+}
+
+function normalizeSlug(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-_]/g, '')
+    .replace(/-+/g, '-')
+    .slice(0, 60);
 }
 
 export default function NewArticlePage() {
@@ -212,7 +205,7 @@ export default function NewArticlePage() {
           if (!slugManual) setSlug(generateSlug(v));
         }}
         onDateChange={setDate}
-        onSlugChange={(v) => { setSlug(v); setSlugManual(true); }}
+        onSlugChange={(v) => { setSlug(normalizeSlug(v)); setSlugManual(true); }}
         onCategoryChange={setCategory} onTagsChange={setTags}
       />
 

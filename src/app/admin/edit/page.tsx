@@ -8,7 +8,7 @@ import TiptapEditor from '@/components/admin/TiptapEditor';
 import { useToast } from '@/components/admin/Toast';
 import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
 import { createClient } from '@/lib/github-api';
-import { parseFrontMatter } from '@/lib/frontmatter';
+import { parseFrontMatter, buildFrontMatter } from '@/lib/frontmatter';
 import { getDraftKey, saveDraft, loadDraft, clearDraft } from '@/lib/draft';
 import {
   dataUrlToRawBase64,
@@ -17,24 +17,6 @@ import {
   getImagePublicPath,
 } from '@/lib/image-upload';
 import type { ContentType } from '@/lib/types';
-
-function escapeYamlString(input: string): string {
-  return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function formatTags(tags: string[]): string {
-  return tags.map(t => `"${escapeYamlString(t)}"`).join(', ');
-}
-
-function buildFrontMatter(meta: { title: string; date: string; tags: string[]; category?: string }) {
-  const lines = ['---'];
-  lines.push(`title: "${escapeYamlString(meta.title)}"`);
-  lines.push(`date: ${meta.date}`);
-  if (meta.category) lines.push(`category: "${escapeYamlString(meta.category)}"`);
-  lines.push(`tags: [${formatTags(meta.tags)}]`);
-  lines.push('---');
-  return lines.join('\n');
-}
 
 function EditPageContent() {
   const searchParams = useSearchParams();
@@ -62,6 +44,9 @@ function EditPageContent() {
     body: '',
   });
   const stateRef = useRef({ title, date, slug, category, tags, body, type });
+  const originalFilename = useRef('');
+  const originalSlug = useRef('');
+  const originalDate = useRef('');
 
   useEffect(() => {
     stateRef.current = { title, date, slug, category, tags, body, type };
@@ -103,11 +88,19 @@ function EditPageContent() {
       setDate((fm.date as string) || '');
       setCategory((fm.category as string) || '');
       setTags(Array.isArray(fm.tags) ? fm.tags as string[] : []);
-      setSlug(filename.replace(/\.md$/, ''));
+      const base = filename.replace(/\.md$/, '');
+      const match = base.match(/^(\d{4}-\d{2}-\d{2})-(.+)$/);
+      const fileDate = match ? match[1] : ((fm.date as string) || '');
+      const fileSlug = match ? match[2] : base;
+      setSlug(fileSlug);
+      setDate(fileDate || (fm.date as string) || '');
       setBody(articleBody);
+      originalFilename.current = filename;
+      originalSlug.current = fileSlug;
+      originalDate.current = fileDate;
       loadedState.current = {
         title: (fm.title as string) || '',
-        date: (fm.date as string) || '',
+        date: fileDate || (fm.date as string) || '',
         category: (fm.category as string) || '',
         tags: Array.isArray(fm.tags) ? fm.tags as string[] : [],
         body: articleBody,
@@ -163,7 +156,7 @@ function EditPageContent() {
       let shouldDeleteOld = false;
 
       if (desiredFilename !== filename) {
-        const ok = confirm('日期已变更，是否重命名文件（URL 会变化）？\n取消将保留旧 URL。');
+        const ok = confirm('日期/slug 变化，是否重命名文件（URL 会变化）？\n取消将保留旧 URL（日期可能不一致）。');
         if (ok) {
           targetPath = `content/${type}/${desiredFilename}`;
           shouldDeleteOld = true;
