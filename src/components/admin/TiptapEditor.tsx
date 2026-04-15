@@ -12,13 +12,18 @@ import { Markdown } from 'tiptap-markdown';
 import { Plugin } from '@tiptap/pm/state';
 import EditorToolbar from './EditorToolbar';
 import { compressImage, ImageUploadError } from '@/lib/image-upload';
+import { useToast } from './Toast';
 
 interface TiptapEditorProps {
   value: string;
   onChange: (markdown: string) => void;
 }
 
-async function handleImageFiles(files: File[], editor: ReturnType<typeof useEditor>) {
+async function handleImageFiles(
+  files: File[],
+  editor: ReturnType<typeof useEditor>,
+  onError?: (message: string) => void
+) {
   if (!editor) return;
   for (const file of files) {
     if (!file.type.startsWith('image/')) continue;
@@ -26,12 +31,17 @@ async function handleImageFiles(files: File[], editor: ReturnType<typeof useEdit
       const dataUrl = await compressImage(file);
       editor.chain().focus().setImage({ src: dataUrl, alt: file.name }).run();
     } catch (e) {
-      console.error(e instanceof ImageUploadError ? e.message : '图片处理失败');
+      const msg = e instanceof ImageUploadError ? e.message : '图片处理失败';
+      console.error(msg);
+      onError?.(msg);
     }
   }
 }
 
-function createImageDropPastePlugin(editor: ReturnType<typeof useEditor>) {
+function createImageDropPastePlugin(
+  editor: ReturnType<typeof useEditor>,
+  onError?: (message: string) => void
+) {
   return new Plugin({
     props: {
       handleDrop(view, event) {
@@ -40,7 +50,7 @@ function createImageDropPastePlugin(editor: ReturnType<typeof useEditor>) {
         const images = Array.from(files).filter(f => f.type.startsWith('image/'));
         if (!images.length) return false;
         event.preventDefault();
-        handleImageFiles(images, editor);
+        handleImageFiles(images, editor, onError);
         return true;
       },
       handlePaste(view, event) {
@@ -49,7 +59,7 @@ function createImageDropPastePlugin(editor: ReturnType<typeof useEditor>) {
         const images = Array.from(files).filter(f => f.type.startsWith('image/'));
         if (!images.length) return false;
         event.preventDefault();
-        handleImageFiles(images, editor);
+        handleImageFiles(images, editor, onError);
         return true;
       },
     },
@@ -57,6 +67,7 @@ function createImageDropPastePlugin(editor: ReturnType<typeof useEditor>) {
 }
 
 export default function TiptapEditor({ value, onChange }: TiptapEditorProps) {
+  const { toast } = useToast();
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -88,7 +99,7 @@ export default function TiptapEditor({ value, onChange }: TiptapEditorProps) {
       p => (p as unknown as { key: string }).key?.includes('imageDropPaste')
     );
     if (!hasImagePlugin) {
-      const plugin = createImageDropPastePlugin(editor);
+      const plugin = createImageDropPastePlugin(editor, (msg) => toast(msg, 'error'));
       Object.defineProperty(plugin, 'key', { value: 'imageDropPaste$' });
       editor.registerPlugin(plugin);
     }

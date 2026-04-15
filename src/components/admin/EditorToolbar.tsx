@@ -1,6 +1,7 @@
 'use client';
 
 import type { Editor } from '@tiptap/react';
+import { useToast } from './Toast';
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -39,6 +40,7 @@ function ToolbarButton({
 
 export default function EditorToolbar({ editor }: EditorToolbarProps) {
   if (!editor) return null;
+  const { toast } = useToast();
 
   return (
     <div className="flex items-center flex-wrap gap-0.5 p-2 border-b border-[var(--border)] bg-[var(--bg-card)]">
@@ -162,7 +164,9 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
                 const dataUrl = await compressImage(file);
                 editor.chain().focus().setImage({ src: dataUrl, alt: file.name }).run();
               } catch (e) {
-                console.error(e instanceof ImageUploadError ? e.message : '图片处理失败');
+                const msg = e instanceof ImageUploadError ? e.message : '图片处理失败';
+                console.error(msg);
+                toast(msg, 'error');
               }
             }
           };

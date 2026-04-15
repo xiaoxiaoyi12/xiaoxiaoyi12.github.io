@@ -8,6 +8,7 @@ import TiptapEditor from '@/components/admin/TiptapEditor';
 import { useToast } from '@/components/admin/Toast';
 import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
 import { createClient } from '@/lib/github-api';
+import { parseFrontMatter } from '@/lib/frontmatter';
 import { getDraftKey, saveDraft, loadDraft, clearDraft } from '@/lib/draft';
 import {
   dataUrlToRawBase64,
@@ -17,30 +18,20 @@ import {
 } from '@/lib/image-upload';
 import type { ContentType } from '@/lib/types';
 
-function parseFrontMatter(content: string) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!match) return { fm: {} as Record<string, unknown>, body: content };
-  const fm: Record<string, unknown> = {};
-  for (const line of match[1].split('\n')) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    let val: unknown = line.slice(colonIdx + 1).trim();
-    if (typeof val === 'string' && val.startsWith('[') && val.endsWith(']')) {
-      val = val.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
-    }
-    if (typeof val === 'string') val = val.replace(/^["']|["']$/g, '');
-    fm[key] = val;
-  }
-  return { fm, body: match[2] };
+function escapeYamlString(input: string): string {
+  return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function formatTags(tags: string[]): string {
+  return tags.map(t => `"${escapeYamlString(t)}"`).join(', ');
 }
 
 function buildFrontMatter(meta: { title: string; date: string; tags: string[]; category?: string }) {
   const lines = ['---'];
-  lines.push(`title: "${meta.title}"`);
+  lines.push(`title: "${escapeYamlString(meta.title)}"`);
   lines.push(`date: ${meta.date}`);
-  if (meta.category) lines.push(`category: "${meta.category}"`);
-  lines.push(`tags: [${meta.tags.join(', ')}]`);
+  if (meta.category) lines.push(`category: "${escapeYamlString(meta.category)}"`);
+  lines.push(`tags: [${formatTags(meta.tags)}]`);
   lines.push('---');
   return lines.join('\n');
 }
@@ -166,7 +157,30 @@ function EditPageContent() {
 
     setPublishing(true);
     try {
-      const filePath = `content/${type}/${filename}`;
+      const desiredFilename = `${date}-${slug}.md`;
+      let filePath = `content/${type}/${filename}`;
+      let targetPath = filePath;
+      let shouldDeleteOld = false;
+
+      if (desiredFilename !== filename) {
+        const ok = confirm('日期已变更，是否重命名文件（URL 会变化）？\n取消将保留旧 URL。');
+        if (ok) {
+          targetPath = `content/${type}/${desiredFilename}`;
+          shouldDeleteOld = true;
+          // Check for duplicate target
+          try {
+            await client.getFile(targetPath);
+            toast('目标文件已存在，请修改日期', 'error');
+            setPublishing(false);
+            return;
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : '';
+            if (msg && !msg.includes('Not Found') && !msg.includes('404')) {
+              throw e;
+            }
+          }
+        }
+      }
       const fm = buildFrontMatter({ title, date, tags, category: (type === 'notes' || type === 'readings') ? category : undefined });
 
       // Collect new images (data URLs) from markdown body
@@ -191,10 +205,17 @@ function EditPageContent() {
       const content = `${fm}\n\n${finalBody}`;
 
       if (imageFiles.length > 0) {
-        imageFiles.push({ path: filePath, content, encoding: 'utf-8' });
-        await client.commitMultipleFiles(imageFiles, `Update ${filename} with ${imageFiles.length - 1} images`);
+        imageFiles.push({ path: targetPath, content, encoding: 'utf-8' });
+        await client.commitMultipleFiles(imageFiles, `Update ${desiredFilename} with ${imageFiles.length - 1} images`);
       } else {
-        await client.saveFile(filePath, content, sha, `Update ${filename}`);
+        if (targetPath !== filePath) {
+          await client.saveFile(targetPath, content, null, `Rename ${filename} -> ${desiredFilename}`);
+        } else {
+          await client.saveFile(filePath, content, sha, `Update ${filename}`);
+        }
+      }
+      if (shouldDeleteOld) {
+        await client.deleteFile(filePath, sha, `Delete old file ${filename}`);
       }
 
       isDirty.current = false;

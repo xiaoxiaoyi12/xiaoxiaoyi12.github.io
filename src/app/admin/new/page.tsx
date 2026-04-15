@@ -16,12 +16,20 @@ import {
 } from '@/lib/image-upload';
 import type { ContentType } from '@/lib/types';
 
+function escapeYamlString(input: string): string {
+  return input.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function formatTags(tags: string[]): string {
+  return tags.map(t => `"${escapeYamlString(t)}"`).join(', ');
+}
+
 function buildFrontMatter(meta: { title: string; date: string; tags: string[]; category?: string }) {
   const lines = ['---'];
-  lines.push(`title: "${meta.title}"`);
+  lines.push(`title: "${escapeYamlString(meta.title)}"`);
   lines.push(`date: ${meta.date}`);
-  if (meta.category) lines.push(`category: "${meta.category}"`);
-  lines.push(`tags: [${meta.tags.join(', ')}]`);
+  if (meta.category) lines.push(`category: "${escapeYamlString(meta.category)}"`);
+  lines.push(`tags: [${formatTags(meta.tags)}]`);
   lines.push('---');
   return lines.join('\n');
 }
@@ -138,6 +146,19 @@ export default function NewArticlePage() {
 
       const articleFilename = `${date}-${slug}.md`;
       const articlePath = `content/${type}/${articleFilename}`;
+
+      // Check for duplicate slug/date (file already exists)
+      try {
+        await client.getFile(articlePath);
+        toast('已存在同名文章，请修改日期或 slug', 'error');
+        setPublishing(false);
+        return;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '';
+        if (msg && !msg.includes('Not Found') && !msg.includes('404')) {
+          throw e;
+        }
+      }
       const content = `${fm}\n\n${finalBody}`;
 
       if (imageFiles.length > 0) {

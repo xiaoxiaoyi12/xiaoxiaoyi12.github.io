@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/github-api';
+import { parseFrontMatter } from '@/lib/frontmatter';
 import { TYPE_LABELS, ALL_TYPES } from '@/lib/types';
 import { useToast } from '@/components/admin/Toast';
 import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
@@ -68,24 +69,6 @@ async function mapWithConcurrency<T, R>(
   });
   await Promise.all(workers);
   return results;
-}
-
-function parseFrontMatter(content: string) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return {};
-  const fm: Record<string, unknown> = {};
-  for (const line of match[1].split('\n')) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    let val: unknown = line.slice(colonIdx + 1).trim();
-    if (typeof val === 'string' && val.startsWith('[') && val.endsWith(']')) {
-      val = val.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
-    }
-    if (typeof val === 'string') val = val.replace(/^["']|["']$/g, '');
-    fm[key] = val;
-  }
-  return fm;
 }
 
 export default function AdminListPage() {
@@ -181,7 +164,7 @@ export default function AdminListPage() {
       const fetched = await mapWithConcurrency(pending, MAX_CONCURRENCY, async f => {
         try {
           const file = await client.getFile(f.path);
-          const fm = parseFrontMatter(file.content);
+          const { fm } = parseFrontMatter(file.content);
           const title = (fm.title as string) || f.name.replace(/\.md$/, '');
           const date = (fm.date as string) || extractDateFromFilename(f.name);
           const tags = Array.isArray(fm.tags) ? fm.tags as string[] : [];
@@ -301,6 +284,9 @@ export default function AdminListPage() {
         >
           + 新建文章
         </button>
+      </div>
+      <div className="text-xs text-[var(--text-dimmed)] mb-4">
+        发布后需等待 GitHub Actions 构建完成（通常 1-3 分钟），搜索/RSS/站点地图才会更新。
       </div>
 
       {/* Dashboard stats */}

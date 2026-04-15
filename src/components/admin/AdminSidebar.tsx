@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const NAV_ITEMS = [
   { href: '/admin/', label: '文章列表', icon: '📄' },
   { href: '/admin/new/', label: '新建文章', icon: '✏️' },
+  { href: '/admin/media/', label: '媒体库', icon: '🖼️' },
   { href: '/admin/settings/', label: '设置', icon: '⚙️' },
 ];
 
