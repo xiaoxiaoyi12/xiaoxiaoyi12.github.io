@@ -10,7 +10,7 @@
 
 ## 技术栈
 
-- **框架**：Next.js 15（App Router，静态导出 SSG）
+- **框架**：Next.js 16（App Router，静态导出 SSG）
 - **语言**：TypeScript
 - **样式**：Tailwind CSS 4 + CSS 变量主题
 - **Markdown**：unified（remark + rehype + shiki 代码高亮）

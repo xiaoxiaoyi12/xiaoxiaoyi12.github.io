@@ -9,10 +9,10 @@ import rehypePrettyCode from 'rehype-pretty-code';
 const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
-  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(remarkRehype, { allowDangerousHtml: false })
   .use(rehypeSlug)
   .use(rehypePrettyCode, { theme: 'github-dark' })
-  .use(rehypeStringify, { allowDangerousHtml: true });
+  .use(rehypeStringify, { allowDangerousHtml: false });
 
 export async function renderMarkdown(md: string): Promise<string> {
   const result = await processor.process(md);

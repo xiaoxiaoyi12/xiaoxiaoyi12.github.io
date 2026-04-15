@@ -63,7 +63,13 @@ function EditPageContent() {
   const [publishing, setPublishing] = useState(false);
   const [draftChecked, setDraftChecked] = useState(false);
   const isDirty = useRef(false);
-  const loadedBody = useRef('');
+  const loadedState = useRef({
+    title: '',
+    date: '',
+    category: '',
+    tags: [] as string[],
+    body: '',
+  });
   const stateRef = useRef({ title, date, slug, category, tags, body, type });
 
   useEffect(() => {
@@ -72,8 +78,15 @@ function EditPageContent() {
 
   // Track unsaved changes
   useEffect(() => {
-    isDirty.current = body !== loadedBody.current;
-  }, [title, body, tags, category]);
+    const base = loadedState.current;
+    const tagsChanged = (tags || []).join('|') !== (base.tags || []).join('|');
+    isDirty.current =
+      title !== base.title ||
+      date !== base.date ||
+      category !== base.category ||
+      body !== base.body ||
+      tagsChanged;
+  }, [title, date, body, tags, category]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -101,7 +114,13 @@ function EditPageContent() {
       setTags(Array.isArray(fm.tags) ? fm.tags as string[] : []);
       setSlug(filename.replace(/\.md$/, ''));
       setBody(articleBody);
-      loadedBody.current = articleBody;
+      loadedState.current = {
+        title: (fm.title as string) || '',
+        date: (fm.date as string) || '',
+        category: (fm.category as string) || '',
+        tags: Array.isArray(fm.tags) ? fm.tags as string[] : [],
+        body: articleBody,
+      };
     } catch (e) {
       toast('加载失败: ' + (e instanceof Error ? e.message : '未知错误'), 'error');
     }

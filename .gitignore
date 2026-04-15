@@ -7,3 +7,4 @@ out/
 public/search-index.json
 public/feed.xml
 public/sitemap.xml
+tsconfig.tsbuildinfo

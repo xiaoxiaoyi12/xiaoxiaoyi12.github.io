@@ -5,6 +5,11 @@ import { renderMarkdown } from './markdown';
 import type { ArticleMeta, Article, ContentType } from './types';
 
 const CONTENT_DIR = path.join(process.cwd(), 'content');
+const SHOULD_CACHE = process.env.NODE_ENV === 'production';
+const TYPE_CACHE = new Map<ContentType, ArticleMeta[]>();
+const SLUG_CACHE = new Map<ContentType, string[]>();
+const ARTICLE_CACHE = new Map<string, Promise<Article | null>>();
+let ALL_CACHE: ArticleMeta[] | null = null;
 
 function slugFromFilename(filename: string): string {
   // Keep full filename as slug (minus .md) to avoid collisions
@@ -41,12 +46,16 @@ function calculateReadingTime(markdown: string): number {
 }
 
 export function getArticlesByType(type: ContentType): ArticleMeta[] {
+  if (SHOULD_CACHE && TYPE_CACHE.has(type)) {
+    return TYPE_CACHE.get(type)!;
+  }
+
   const dir = path.join(CONTENT_DIR, type);
   if (!fs.existsSync(dir)) return [];
 
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
 
-  return files.map(filename => {
+  const items = files.map(filename => {
     const raw = fs.readFileSync(path.join(dir, filename), 'utf-8');
     const { data, content: body } = matter(raw);
     const slug = slugFromFilename(filename);
@@ -62,17 +71,28 @@ export function getArticlesByType(type: ContentType): ArticleMeta[] {
       filename,
     };
   }).sort((a, b) => b.date.localeCompare(a.date));
+
+  if (SHOULD_CACHE) {
+    TYPE_CACHE.set(type, items);
+    SLUG_CACHE.set(type, items.map(a => a.slug));
+  }
+
+  return items;
 }
 
 export function getAllArticles(): ArticleMeta[] {
+  if (SHOULD_CACHE && ALL_CACHE) return ALL_CACHE;
+
   const all: ArticleMeta[] = [];
   for (const type of ['posts', 'notes', 'readings', 'thoughts'] as ContentType[]) {
     all.push(...getArticlesByType(type));
   }
-  return all.sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = all.sort((a, b) => b.date.localeCompare(a.date));
+  if (SHOULD_CACHE) ALL_CACHE = sorted;
+  return sorted;
 }
 
-export async function getArticle(type: ContentType, slug: string): Promise<Article | null> {
+async function loadArticle(type: ContentType, slug: string): Promise<Article | null> {
   const dir = path.join(CONTENT_DIR, type);
   if (!fs.existsSync(dir)) return null;
 
@@ -100,9 +120,19 @@ export async function getArticle(type: ContentType, slug: string): Promise<Artic
 }
 
 export function getSlugs(type: ContentType): string[] {
-  const dir = path.join(CONTENT_DIR, type);
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.md'))
-    .map(slugFromFilename);
+  if (SHOULD_CACHE && SLUG_CACHE.has(type)) {
+    return SLUG_CACHE.get(type)!;
+  }
+  const slugs = getArticlesByType(type).map(a => a.slug);
+  if (SHOULD_CACHE) SLUG_CACHE.set(type, slugs);
+  return slugs;
+}
+
+export async function getArticle(type: ContentType, slug: string): Promise<Article | null> {
+  if (!SHOULD_CACHE) return loadArticle(type, slug);
+  const key = `${type}/${slug}`;
+  if (!ARTICLE_CACHE.has(key)) {
+    ARTICLE_CACHE.set(key, loadArticle(type, slug));
+  }
+  return ARTICLE_CACHE.get(key)!;
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient, getGitHubSettings } from '@/lib/github-api';
+import { createClient } from '@/lib/github-api';
 import { TYPE_LABELS, ALL_TYPES } from '@/lib/types';
 import { useToast } from '@/components/admin/Toast';
 import { useAdminShortcuts } from '@/components/admin/KeyboardShortcuts';
@@ -16,6 +16,58 @@ interface ArticleEntry {
   title: string;
   date: string;
   tags: string[];
+}
+
+interface CachedMeta {
+  sha: string;
+  title: string;
+  date: string;
+  tags: string[];
+}
+
+const CACHE_KEY = 'admin-frontmatter-cache-v1';
+const MAX_CONCURRENCY = 6;
+
+function loadCache(): Record<string, CachedMeta> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) as Record<string, CachedMeta> : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCache(cache: Record<string, CachedMeta>) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function extractDateFromFilename(name: string): string {
+  const match = name.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : '';
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) break;
+      results[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 function parseFrontMatter(content: string) {
@@ -66,38 +118,91 @@ export default function AdminListPage() {
     setError('');
 
     try {
-      // Fetch all types in parallel
-      const typeResults = await Promise.allSettled(
-        ALL_TYPES.map(async type => {
-          const files = await client.listFiles(`content/${type}`);
-          const mdFiles = files.filter(f => f.name.endsWith('.md'));
+      const cache = loadCache();
+      const cacheUpdates: Record<string, CachedMeta> = { ...cache };
 
-          // Fetch all file contents in parallel within each type
-          const fileResults = await Promise.allSettled(
-            mdFiles.map(async f => {
-              const file = await client.getFile(f.path);
-              const fm = parseFrontMatter(file.content);
+      let files: { name: string; path: string; sha: string; type: ContentType }[] = [];
+      try {
+        const tree = await client.getRepoTreeRecursive();
+        if (!tree.truncated) {
+          files = tree.tree
+            .filter(e => e.type === 'blob' && e.path.startsWith('content/') && e.path.endsWith('.md'))
+            .map(e => {
+              const parts = e.path.split('/');
+              const type = parts[1] as ContentType;
+              if (!ALL_TYPES.includes(type)) return null;
               return {
-                name: f.name, path: f.path, sha: f.sha, type,
-                title: (fm.title as string) || f.name,
-                date: (fm.date as string) || '',
-                tags: Array.isArray(fm.tags) ? fm.tags as string[] : [],
-              } as ArticleEntry;
+                name: parts[parts.length - 1],
+                path: e.path,
+                sha: e.sha,
+                type,
+              };
             })
-          );
+            .filter(Boolean) as { name: string; path: string; sha: string; type: ContentType }[];
+        }
+      } catch {
+        // fall back to per-directory listing
+      }
 
-          return fileResults.map((r, i) =>
-            r.status === 'fulfilled'
-              ? r.value
-              : { name: mdFiles[i].name, path: mdFiles[i].path, sha: mdFiles[i].sha, type, title: mdFiles[i].name, date: '', tags: [] } as ArticleEntry
-          );
-        })
-      );
+      if (files.length === 0) {
+        const typeResults = await Promise.allSettled(
+          ALL_TYPES.map(async type => {
+            const list = await client.listFiles(`content/${type}`);
+            return list
+              .filter(f => f.name.endsWith('.md'))
+              .map(f => ({ name: f.name, path: f.path, sha: f.sha, type }));
+          })
+        );
+        files = typeResults
+          .filter((r): r is PromiseFulfilledResult<{ name: string; path: string; sha: string; type: ContentType }[]> => r.status === 'fulfilled')
+          .flatMap(r => r.value);
+      }
 
-      const all = typeResults
-        .filter((r): r is PromiseFulfilledResult<ArticleEntry[]> => r.status === 'fulfilled')
-        .flatMap(r => r.value);
+      const cached: ArticleEntry[] = [];
+      const pending: { name: string; path: string; sha: string; type: ContentType }[] = [];
 
+      for (const f of files) {
+        const cachedMeta = cache[f.path];
+        if (cachedMeta && cachedMeta.sha === f.sha) {
+          cached.push({
+            name: f.name,
+            path: f.path,
+            sha: f.sha,
+            type: f.type,
+            title: cachedMeta.title || f.name.replace(/\.md$/, ''),
+            date: cachedMeta.date || extractDateFromFilename(f.name),
+            tags: cachedMeta.tags || [],
+          });
+        } else {
+          pending.push(f);
+        }
+      }
+
+      const fetched = await mapWithConcurrency(pending, MAX_CONCURRENCY, async f => {
+        try {
+          const file = await client.getFile(f.path);
+          const fm = parseFrontMatter(file.content);
+          const title = (fm.title as string) || f.name.replace(/\.md$/, '');
+          const date = (fm.date as string) || extractDateFromFilename(f.name);
+          const tags = Array.isArray(fm.tags) ? fm.tags as string[] : [];
+          const sha = file.sha || f.sha;
+          cacheUpdates[f.path] = { sha, title, date, tags };
+          return { name: f.name, path: f.path, sha, type: f.type, title, date, tags } as ArticleEntry;
+        } catch {
+          return {
+            name: f.name,
+            path: f.path,
+            sha: f.sha,
+            type: f.type,
+            title: f.name.replace(/\.md$/, ''),
+            date: extractDateFromFilename(f.name),
+            tags: [],
+          } as ArticleEntry;
+        }
+      });
+
+      saveCache(cacheUpdates);
+      const all = [...cached, ...fetched];
       all.sort((a, b) => b.date.localeCompare(a.date));
       setArticles(all);
     } catch (e) {

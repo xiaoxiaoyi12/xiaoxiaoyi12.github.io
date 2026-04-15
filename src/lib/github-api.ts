@@ -10,6 +10,17 @@ export interface FileContent {
   sha: string;
 }
 
+export interface TreeEntry {
+  path: string;
+  sha: string;
+  type: 'blob' | 'tree' | 'commit';
+}
+
+export interface RepoTree {
+  tree: TreeEntry[];
+  truncated: boolean;
+}
+
 export class GitHubClient {
   private token: string;
   private repo: string;
@@ -51,6 +62,18 @@ export class GitHubClient {
   async listFiles(dir: string): Promise<FileEntry[]> {
     const data = await this.request(`/contents/${dir}?ref=${this.branch}`);
     return Array.isArray(data) ? data.filter((f: FileEntry) => f.type === 'file') : [];
+  }
+
+  async getRepoTreeRecursive(): Promise<RepoTree> {
+    const ref = await this.request(`/git/ref/heads/${this.branch}`);
+    const latestCommitSha = ref.object.sha;
+    const latestCommit = await this.request(`/git/commits/${latestCommitSha}`);
+    const treeSha = latestCommit.tree.sha;
+    const tree = await this.request(`/git/trees/${treeSha}?recursive=1`);
+    return {
+      tree: Array.isArray(tree.tree) ? tree.tree : [],
+      truncated: Boolean(tree.truncated),
+    };
   }
 
   async getFile(filePath: string): Promise<FileContent> {
