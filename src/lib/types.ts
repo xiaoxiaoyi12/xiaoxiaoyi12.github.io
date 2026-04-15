@@ -13,6 +13,13 @@ export interface ArticleMeta {
 
 export interface Article extends ArticleMeta {
   content: string; // rendered HTML
+  readingTime: number; // minutes
+}
+
+export interface ArticleNavigation {
+  prev: ArticleMeta | null;
+  next: ArticleMeta | null;
+  related: ArticleMeta[];
 }
 
 export const TYPE_LABELS: Record<ContentType, string> = {

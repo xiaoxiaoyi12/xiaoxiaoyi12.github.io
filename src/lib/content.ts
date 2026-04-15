@@ -27,6 +27,19 @@ function excerptFromBody(body: string, maxLen = 200): string {
   return plain.length > maxLen ? plain.slice(0, maxLen) + '...' : plain;
 }
 
+function calculateReadingTime(markdown: string): number {
+  // Remove code blocks and front matter
+  const cleaned = markdown
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/^---[\s\S]*?---/m, '');
+
+  const chineseChars = (cleaned.match(/[\u4e00-\u9fff]/g) || []).length;
+  const englishWords = (cleaned.match(/[a-zA-Z]+/g) || []).length;
+
+  const minutes = chineseChars / 400 + englishWords / 200;
+  return Math.max(1, Math.ceil(minutes));
+}
+
 export function getArticlesByType(type: ContentType): ArticleMeta[] {
   const dir = path.join(CONTENT_DIR, type);
   if (!fs.existsSync(dir)) return [];
@@ -82,6 +95,7 @@ export async function getArticle(type: ContentType, slug: string): Promise<Artic
     excerpt: excerptFromBody(body),
     filename,
     content: html,
+    readingTime: calculateReadingTime(body),
   };
 }
 
