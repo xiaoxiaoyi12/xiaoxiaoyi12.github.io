@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { getArticlesByType } from '@/lib/content';
 import type { ArticleMeta } from '@/lib/types';
 import HomeClient from './HomeClient';
@@ -12,13 +13,15 @@ export default function Home() {
   const readingsGrouped = groupByCategory(readings);
 
   return (
-    <HomeClient
-      posts={posts}
-      notesGrouped={notesGrouped}
-      readingsGrouped={readingsGrouped}
-      thoughts={thoughts}
-      allArticles={[...posts, ...notes, ...readings, ...thoughts]}
-    />
+    <Suspense>
+      <HomeClient
+        posts={posts}
+        notesGrouped={notesGrouped}
+        readingsGrouped={readingsGrouped}
+        thoughts={thoughts}
+        allArticles={[...posts, ...notes, ...readings, ...thoughts]}
+      />
+    </Suspense>
   );
 }
 

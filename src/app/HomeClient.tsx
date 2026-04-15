@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ArticleCard from '@/components/article/ArticleCard';
 import { search as fuseSearch, preloadSearchIndex } from '@/lib/search';
 import type { SearchResult } from '@/lib/search';
@@ -22,8 +23,10 @@ interface Props {
 }
 
 export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoughts }: Props) {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
   const [activeTab, setActiveTab] = useState<ContentType>('posts');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
