@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import ArticleCard from '@/components/article/ArticleCard';
 import { search as fuseSearch, preloadSearchIndex } from '@/lib/search';
 import type { SearchResult } from '@/lib/search';
@@ -23,7 +23,6 @@ interface Props {
 }
 
 export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoughts }: Props) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
   const [activeTab, setActiveTab] = useState<ContentType>('posts');
@@ -55,8 +54,8 @@ export default function HomeClient({ posts, notesGrouped, readingsGrouped, thoug
     if (q) params.set('q', q);
     else params.delete('q');
     const nextUrl = params.toString() ? `/?${params.toString()}` : '/';
-    router.replace(nextUrl, { scroll: false });
-  }, [query, router]);
+    window.history.replaceState(null, '', nextUrl);
+  }, [query]);
 
   useEffect(() => {
     if (!query.trim()) setSearchType('all');
